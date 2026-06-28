@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Logs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-clipboard-list"></i> Logs</h2>
+    <p>إدارة قنوات اللوقات</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>📋 Log Channels</h3>
+    </div>
+    <div class="card-body">
+        {% for setting in settings %}
+        <div class="log-item">
+            <span>{{ setting['key'].replace('log_', '').replace('_', ' ').title() }}</span>
+            <span class="channel-mention"><#{{ setting['value'] }}></span>
+            <button class="btn btn-secondary btn-sm">Change</button>
+        </div>
+        {% else %}
+        <p class="text-muted">لا توجد قنوات لوق محددة</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
