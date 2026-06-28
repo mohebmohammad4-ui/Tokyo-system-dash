@@ -7,20 +7,23 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tokyo_secret_key_2026')
 
 # ====== دالة جلب البيانات من قاعدة البوت ======
+import os
+
 def get_db_connection():
-    # مسار قاعدة البيانات (تأكد من أنه صحيح)
-    db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'TOKYO-BOT', 'data', 'tokyo.db')
-    if not os.path.exists(db_path):
-        db_path = 'data/tokyo.db'  # مسار بديل
+    # التحقق من وجود متغير بيئي يحدد البيئة
+    if os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RAILWAY_SERVICE_ID'):
+        # على Railway
+        db_path = '/app/data/tokyo.db'
+    else:
+        # محلياً
+        db_path = 'data/tokyo.db'
+    
+    # تأكد من وجود المجلد
+    os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else '.', exist_ok=True)
     
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
-
-# ====== الصفحة الرئيسية ======
-@app.route('/')
-def index():
-    conn = get_db_connection()
     
     # إحصائيات سريعة
     members = conn.execute('SELECT COUNT(*) FROM levels').fetchone()[0] or 0
