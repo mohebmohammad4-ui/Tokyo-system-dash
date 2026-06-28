@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-home"></i> لوحة التحكم</h2>
+    <p>مرحباً {{ user.username }}! اختر سيرفراً لإدارته</p>
+</div>
+
+<div class="user-info">
+    <div class="card">
+        <div class="card-body" style="display: flex; align-items: center; gap: 20px;">
+            <img src="https://cdn.discordapp.com/avatars/{{ user.id }}/{{ user.avatar }}.png" 
+                 style="width: 64px; height: 64px; border-radius: 50%; border: 2px solid #00d4ff;">
+            <div>
+                <h3>{{ user.username }}</h3>
+                <p class="text-muted">ID: {{ user.id }}</p>
+            </div>
+            <a href="/logout" class="btn btn-danger" style="margin-left: auto;">تسجيل الخروج</a>
+        </div>
+    </div>
+</div>
+
+<div class="guilds-grid">
+    <h3 style="margin: 24px 0 16px;"><i class="fas fa-server"></i> سيرفراتك</h3>
+    
+    {% if guilds %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+            {% for guild in guilds %}
+            <a href="/server/{{ guild.id }}" class="guild-card" style="
+                background: #1a1a1a;
+                border: 1px solid #1f2a3a;
+                border-radius: 12px;
+                padding: 20px;
+                text-align: center;
+                text-decoration: none;
+                color: #fff;
+                transition: all 0.3s ease;
+                cursor: pointer;
+            ">
+                {% if guild.icon %}
+                <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+                     style="width: 64px; height: 64px; border-radius: 50%; margin-bottom: 12px;">
+                {% else %}
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: #2a3a4a; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                    {{ guild.name[0] }}
+                </div>
+                {% endif %}
+                <h4 style="font-size: 16px; margin-bottom: 4px;">{{ guild.name }}</h4>
+                <p style="color: #8899aa; font-size: 12px;">ID: {{ guild.id }}</p>
+                <span style="
+                    display: inline-block;
+                    margin-top: 8px;
+                    padding: 4px 12px;
+                    border-radius: 12px;
+                    font-size: 11px;
+                    background: rgba(0, 212, 255, 0.15);
+                    color: #00d4ff;
+                ">إدارة</span>
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <p style="color: #8899aa; padding: 40px 0;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; display: block; margin-bottom: 16px; color: #ffd700;"></i>
+                    لا توجد سيرفرات تملك فيها صلاحيات الإدارة.<br>
+                    تأكد من أنك تملك صلاحية Administrator في السيرفرات التي تريد إدارتها.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="quick-actions" style="margin-top: 32px;">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-bolt"></i> إجراءات سريعة</h3>
+        </div>
+        <div class="card-body">
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="alert('سيتم إضافة سيرفر جديد قريباً')">
+                    <i class="fas fa-plus"></i> إضافة سيرفر
+                </button>
+                <button class="btn btn-info" onclick="alert('سيتم فتح واجهة إعدادات البوت')">
+                    <i class="fas fa-sliders-h"></i> إعدادات البوت
+                </button>
+                <button class="btn btn-success" onclick="alert('سيتم فتح واجهة التكتات')">
+                    <i class="fas fa-ticket"></i> إدارة التكتات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
