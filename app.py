@@ -260,6 +260,27 @@ def callback():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+    @app.route('/api/guild_roles/<guild_id>')
+@login_required
+def get_guild_roles(guild_id):
+    user_id = session.get('user_id')
+    user = get_user_by_discord_id(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # جلب الرتب من ديسكورد
+    headers = {'Authorization': f'Bearer {user["access_token"]}'}
+    response = requests.get(
+        f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        return jsonify({'error': 'Failed to fetch roles'}), 400
+    
+    roles = response.json()
+    return jsonify(roles)
 
 # ====== دالة جلب بيانات المستخدم ======
 def get_current_user():
