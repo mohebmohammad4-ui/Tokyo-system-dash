@@ -9,17 +9,31 @@ app.secret_key = os.getenv('SECRET_KEY', 'tokyo_secret_key_2026')
 # ====== دالة جلب البيانات من قاعدة البوت ======
 import os
 
+import os
+import sqlite3
+
 def get_db_connection():
-    # التحقق من وجود متغير بيئي يحدد البيئة
-    if os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RAILWAY_SERVICE_ID'):
-        # على Railway
-        db_path = '/app/data/tokyo.db'
-    else:
-        # محلياً
-        db_path = 'data/tokyo.db'
+    # قائمة بكل المسارات الممكنة لقاعدة البيانات
+    possible_paths = [
+        '/app/data/tokyo.db',                    # مسار Railway
+        '/app/TOKYO-BOT/data/tokyo.db',          # لو البوت جنب الداشبورد
+        'data/tokyo.db',                         # مسار محلي
+        '../TOKYO-BOT/data/tokyo.db',            # لو مجلد البوت برا
+        '/app/tokyo.db',                         # مسار بديل
+    ]
     
-    # تأكد من وجود المجلد
-    os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else '.', exist_ok=True)
+    db_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            db_path = path
+            break
+    
+    # لو ما لقى الملف، أنشئ مجلد data وملف فارغ
+    if not db_path:
+        os.makedirs('/app/data', exist_ok=True)
+        db_path = '/app/data/tokyo.db'
+        # أنشئ ملف فارغ عشان ما يطلع خطأ
+        open(db_path, 'a').close()
     
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
