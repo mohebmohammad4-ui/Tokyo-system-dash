@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Moderation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-gavel"></i> Moderation</h2>
+    <p>إدارة أوامر الإدارة والصلاحيات</p>
+</div>
+
+<div class="mod-settings">
+    <div class="card">
+        <div class="card-header">
+            <h3>🛡️ Mod Roles</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">تحديد الرتب التي لها صلاحية استخدام أوامر الإدارة</p>
+            <select class="form-select">
+                <option>Select role...</option>
+            </select>
+            <button class="btn btn-primary mt-2">حفظ</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>⏰ Manual Voice Mute Duration</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">المدة الافتراضية لكتم الصوت في الفويس</p>
+            <select class="form-select">
+                <option>Until member leaves the server</option>
+                <option>5 minutes</option>
+                <option>10 minutes</option>
+                <option>30 minutes</option>
+                <option>1 hour</option>
+            </select>
+            <button class="btn btn-primary mt-2">حفظ</button>
+        </div>
+    </div>
+</div>
+
+<div class="commands-grid">
+    <div class="command-card">
+        <div class="command-header">
+            <span class="command-name">/ban</span>
+            <span class="badge badge-success">Active</span>
+        </div>
+        <p class="command-desc">حظر عضو من السيرفر</p>
+        <div class="command-actions">
+            <button class="btn btn-secondary btn-sm">Edit</button>
+            <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="command-card">
+        <div class="command-header">
+            <span class="command-name">/timeout</span>
+            <span class="badge badge-success">Active</span>
+        </div>
+        <p class="command-desc">وضع عضو في تايم</p>
+        <div class="command-actions">
+            <button class="btn btn-secondary btn-sm">Edit</button>
+            <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="command-card">
+        <div class="command-header">
+            <span class="command-name">/warn</span>
+            <span class="badge badge-success">Active</span>
+        </div>
+        <p class="command-desc">إعطاء تحذير لعضو</p>
+        <div class="command-actions">
+            <button class="btn btn-secondary btn-sm">Edit</button>
+            <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="command-card">
+        <div class="command-header">
+            <span class="command-name">/kick</span>
+            <span class="badge badge-warning">Disabled</span>
+        </div>
+        <p class="command-desc">طرد عضو من السيرفر</p>
+        <div class="command-actions">
+            <button class="btn btn-secondary btn-sm">Edit</button>
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+</div>
+{% endblock %}
