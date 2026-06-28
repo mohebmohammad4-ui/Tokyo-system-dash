@@ -3,62 +3,36 @@ import sqlite3
 import os
 import requests
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
-from flask.json import JSONEncoder
-
-# ====== JSON Encoder مخصص للتعامل مع Set ======
-class CustomJSONEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, set):
-            return list(obj)
-        return super().default(obj)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tokyo_secret_key_2026')
-app.json_encoder = CustomJSONEncoder  # استخدام الـ Encoder المخصص
 
 # ====== إعدادات Discord OAuth2 ======
-DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID', 'ضع_الـ_Client_ID_هنا')
-DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET', 'ضع_الـ_Client_Secret_هنا')
+DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID', '')
+DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET', '')
 DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI', 'http://localhost:5000/callback')
 DISCORD_API_BASE = 'https://discord.com/api/v10'
 
 # ====== دوال قاعدة البيانات ======
 def get_db_connection():
-    possible_paths = [
-        '/app/data/tokyo.db',
-        'data/tokyo.db',
-        '../TOKYO-BOT/data/tokyo.db',
-        '/app/TOKYO-BOT/data/tokyo.db',
-    ]
-    
-    db_path = None
-    for path in possible_paths:
-        if os.path.exists(path):
-            db_path = path
-            break
-    
-    if not db_path:
+    db_path = '/app/data/tokyo.db'
+    if not os.path.exists(db_path):
         os.makedirs('/app/data', exist_ok=True)
-        db_path = '/app/data/tokyo.db'
         open(db_path, 'a').close()
     
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
-# ====== إنشاء الجداول ======
 def init_db():
     conn = get_db_connection()
-    
     conn.execute('''CREATE TABLE IF NOT EXISTS levels (
         user_id INTEGER PRIMARY KEY,
         xp INTEGER DEFAULT 0,
-        level INTEGER DEFAULT 0,
-        total_messages INTEGER DEFAULT 0
+        level INTEGER DEFAULT 0
     )''')
-    
     conn.execute('''CREATE TABLE IF NOT EXISTS warnings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -66,7 +40,6 @@ def init_db():
         moderator_id INTEGER,
         timestamp TEXT
     )''')
-    
     conn.execute('''CREATE TABLE IF NOT EXISTS tickets (
         channel_id INTEGER PRIMARY KEY,
         user_id INTEGER,
@@ -74,51 +47,14 @@ def init_db():
         assigned_to INTEGER DEFAULT NULL,
         created_at TEXT
     )''')
-    
     conn.execute('''CREATE TABLE IF NOT EXISTS autoreply (
         trigger TEXT PRIMARY KEY,
         response TEXT
     )''')
-    
     conn.execute('''CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT
     )''')
-    
-    conn.execute('''CREATE TABLE IF NOT EXISTS auto_roles (
-        level INTEGER PRIMARY KEY,
-        role_id INTEGER
-    )''')
-    
-    conn.execute('''CREATE TABLE IF NOT EXISTS mod_actions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        action TEXT,
-        target_id INTEGER,
-        moderator_id INTEGER,
-        reason TEXT,
-        timestamp TEXT
-    )''')
-    
-    conn.execute('''CREATE TABLE IF NOT EXISTS self_roles (
-        role_id INTEGER PRIMARY KEY,
-        emoji TEXT
-    )''')
-    
-    conn.execute('''CREATE TABLE IF NOT EXISTS notifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        service TEXT,
-        identifier TEXT,
-        channel_id INTEGER
-    )''')
-    
-    conn.execute('''CREATE TABLE IF NOT EXISTS starboard_messages (
-        message_id INTEGER PRIMARY KEY,
-        content TEXT,
-        author_id INTEGER,
-        stars INTEGER,
-        timestamp TEXT
-    )''')
-    
     conn.execute('''CREATE TABLE IF NOT EXISTS dashboard_users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         discord_id TEXT UNIQUE,
@@ -130,10 +66,9 @@ def init_db():
         guilds TEXT,
         created_at TEXT
     )''')
-    
     conn.commit()
     conn.close()
-    print("✅ Database tables created successfully!")
+    print("✅ Database initialized")
 
 init_db()
 
@@ -150,8 +85,7 @@ def get_user_by_discord_id(discord_id):
 def create_or_update_user(discord_id, username, avatar, access_token, refresh_token, expires_in, guilds):
     conn = get_db_connection()
     expires_at = int(datetime.now().timestamp()) + expires_in
-    guilds_json = json.dumps(guilds)  # تحويل إلى JSON
-    
+    guilds_json = json.dumps(guilds)
     conn.execute(
         """INSERT OR REPLACE INTO dashboard_users 
            (discord_id, username, avatar, access_token, refresh_token, token_expires, guilds, created_at)
@@ -172,7 +106,7 @@ def get_user_guilds(discord_id):
         return json.loads(result['guilds'])
     return []
 
-# ====== دالة التحقق من تسجيل الدخول ======
+# ====== التحقق من تسجيل الدخول ======
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -184,6 +118,8 @@ def login_required(f):
 # ====== مسارات المصادقة ======
 @app.route('/login')
 def login():
+    if not DISCORD_CLIENT_ID or not DISCORD_CLIENT_SECRET:
+        return "❌ Discord Client ID or Secret not configured", 500
     auth_url = (
         f"{DISCORD_API_BASE}/oauth2/authorize"
         f"?client_id={DISCORD_CLIENT_ID}"
@@ -212,12 +148,12 @@ def callback():
     response = requests.post(f"{DISCORD_API_BASE}/oauth2/token", data=data, headers=headers)
     
     if response.status_code != 200:
-        return f"❌ Error: {response.json()}", 400
+        return f"❌ Error: {response.text}", 400
     
     token_data = response.json()
     access_token = token_data.get('access_token')
     refresh_token = token_data.get('refresh_token')
-    expires_in = token_data.get('expires_in')
+    expires_in = token_data.get('expires_in', 604800)
     
     user_response = requests.get(
         f"{DISCORD_API_BASE}/users/@me",
@@ -236,7 +172,6 @@ def callback():
     
     raw_guilds = guilds_response.json() if guilds_response.status_code == 200 else []
     
-    # تنظيف البيانات (تحويل أي set إلى list)
     clean_guilds = []
     for guild in raw_guilds:
         clean_guilds.append({
@@ -247,7 +182,6 @@ def callback():
             'owner': bool(guild.get('owner', False))
         })
     
-    # حفظ في قاعدة البيانات
     create_or_update_user(
         user_data['id'],
         user_data['username'],
@@ -258,7 +192,6 @@ def callback():
         clean_guilds
     )
     
-    # ====== 🔥 تخزين فقط القيم البسيطة في Session ======
     session['user_id'] = str(user_data['id'])
     session['username'] = user_data['username']
     session['avatar'] = user_data.get('avatar', '')
@@ -270,21 +203,19 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# ====== دالة جلب بيانات المستخدم ======
-def get_current_user():
-    user_id = session.get('user_id')
-    if not user_id:
-        return None
-    return get_user_by_discord_id(user_id)
+# ====== الصفحات ======
+@app.route('/')
+def index():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return render_template('login.html')
 
-# ====== لوحة التحكم الرئيسية ======
 @app.route('/dashboard')
 @login_required
 def dashboard():
     user_id = session.get('user_id')
     guilds = get_user_guilds(user_id)
     
-    # جلب بيانات المستخدم من قاعدة البوت
     conn = get_db_connection()
     user_data = conn.execute(
         "SELECT xp, level FROM levels WHERE user_id = ?",
@@ -313,14 +244,6 @@ def dashboard():
         all_guilds=guilds
     )
 
-# ====== الصفحة الرئيسية ======
-@app.route('/')
-def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
-    return render_template('login.html')
-
-# ====== عرض بيانات السيرفر المحدد ======
 @app.route('/server/<guild_id>')
 @login_required
 def server_dashboard(guild_id):
@@ -342,48 +265,6 @@ def server_dashboard(guild_id):
         datetime=datetime
     )
 
-# ====== APIs ======
-@app.route('/api/guild_roles/<guild_id>')
-@login_required
-def get_guild_roles(guild_id):
-    user_id = session.get('user_id')
-    user = get_user_by_discord_id(user_id)
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    headers = {'Authorization': f'Bearer {user["access_token"]}'}
-    response = requests.get(
-        f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
-        headers=headers
-    )
-    
-    if response.status_code != 200:
-        return jsonify({'error': 'Failed to fetch roles'}), 400
-    
-    return jsonify(response.json())
-
-@app.route('/api/guild_channels/<guild_id>')
-@login_required
-def get_guild_channels(guild_id):
-    user_id = session.get('user_id')
-    user = get_user_by_discord_id(user_id)
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    headers = {'Authorization': f'Bearer {user["access_token"]}'}
-    response = requests.get(
-        f"{DISCORD_API_BASE}/guilds/{guild_id}/channels",
-        headers=headers
-    )
-    
-    if response.status_code != 200:
-        return jsonify({'error': 'Failed to fetch channels'}), 400
-    
-    return jsonify(response.json())
-
-# باقي الصفحات APIs
 @app.route('/moderation')
 @login_required
 def moderation():
@@ -478,139 +359,46 @@ def mod_actions():
     conn.close()
     return render_template('mod_actions.html', mod_actions=actions)
 
-@app.route('/api/addselfrole', methods=['POST'])
+# ====== APIs ======
+@app.route('/api/guild_roles/<guild_id>')
 @login_required
-def api_add_self_role():
-    data = request.json
-    role_id = data.get('role_id')
-    emoji = data.get('emoji', '')
+def get_guild_roles(guild_id):
+    user_id = session.get('user_id')
+    user = get_user_by_discord_id(user_id)
     
-    if not role_id:
-        return jsonify({'error': 'role_id مطلوب'}), 400
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
     
-    conn = get_db_connection()
-    conn.execute(
-        "INSERT OR REPLACE INTO self_roles (role_id, emoji) VALUES (?, ?)",
-        (role_id, emoji)
+    headers = {'Authorization': f'Bearer {user["access_token"]}'}
+    response = requests.get(
+        f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
+        headers=headers
     )
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/removeselfrole/<role_id>', methods=['POST'])
-@login_required
-def api_remove_self_role(role_id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM self_roles WHERE role_id = ?", (role_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/removelevelrole/<int:level>', methods=['POST'])
-@login_required
-def api_remove_level_role(level):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM auto_roles WHERE level = ?", (level,))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/setstarboard', methods=['POST'])
-@login_required
-def api_set_starboard():
-    data = request.json
-    channel_id = data.get('channel_id')
-    threshold = data.get('threshold')
     
-    conn = get_db_connection()
-    if channel_id:
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('starboard_channel', ?)",
-            (channel_id,)
-        )
-    if threshold:
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES ('starboard_threshold', ?)",
-            (str(threshold),)
-        )
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+    if response.status_code != 200:
+        return jsonify([])
+    
+    return jsonify(response.json())
 
-@app.route('/api/addtwitch', methods=['POST'])
+@app.route('/api/guild_channels/<guild_id>')
 @login_required
-def api_add_twitch():
-    data = request.json
-    streamer = data.get('streamer')
-    channel = data.get('channel')
+def get_guild_channels(guild_id):
+    user_id = session.get('user_id')
+    user = get_user_by_discord_id(user_id)
     
-    if not streamer or not channel:
-        return jsonify({'error': 'بيانات ناقصة'}), 400
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
     
-    conn = get_db_connection()
-    conn.execute(
-        "INSERT OR REPLACE INTO notifications (service, identifier, channel_id) VALUES ('twitch', ?, ?)",
-        (streamer.lower(), channel)
+    headers = {'Authorization': f'Bearer {user["access_token"]}'}
+    response = requests.get(
+        f"{DISCORD_API_BASE}/guilds/{guild_id}/channels",
+        headers=headers
     )
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/addyoutube', methods=['POST'])
-@login_required
-def api_add_youtube():
-    data = request.json
-    channel_id = data.get('channel_id')
-    channel = data.get('channel')
     
-    if not channel_id or not channel:
-        return jsonify({'error': 'بيانات ناقصة'}), 400
+    if response.status_code != 200:
+        return jsonify([])
     
-    conn = get_db_connection()
-    conn.execute(
-        "INSERT OR REPLACE INTO notifications (service, identifier, channel_id) VALUES ('youtube', ?, ?)",
-        (channel_id, channel)
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/removenotification', methods=['POST'])
-@login_required
-def api_remove_notification():
-    data = request.json
-    service = data.get('service')
-    identifier = data.get('identifier')
-    
-    if not service or not identifier:
-        return jsonify({'error': 'بيانات ناقصة'}), 400
-    
-    conn = get_db_connection()
-    conn.execute(
-        "DELETE FROM notifications WHERE service = ? AND identifier = ?",
-        (service, identifier)
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/api/settempcat', methods=['POST'])
-@login_required
-def api_set_tempcat():
-    data = request.json
-    category_id = data.get('category_id')
-    
-    if not category_id:
-        return jsonify({'error': 'category_id مطلوب'}), 400
-    
-    conn = get_db_connection()
-    conn.execute(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES ('temp_category', ?)",
-        (category_id,)
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+    return jsonify(response.json())
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
