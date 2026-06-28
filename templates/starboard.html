@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Starboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-star"></i> Starboard</h2>
+    <p>تمييز الرسائل المميزة بالنجوم</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>⚙️ Settings</h3>
+    </div>
+    <div class="card-body">
+        <div class="setting-item">
+            <span class="label">Starboard Channel:</span>
+            <span class="value">
+                {% if starboard_channel %}
+                <span class="channel-mention"><#{{ starboard_channel['value'] }}></span>
+                {% else %}
+                <span class="text-muted">❌ Not set</span>
+                {% endif %}
+            </span>
+            <button class="btn btn-secondary btn-sm">Change</button>
+        </div>
+        <div class="setting-item">
+            <span class="label">Star Threshold:</span>
+            <span class="value">3</span>
+            <button class="btn btn-secondary btn-sm">Change</button>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3>📋 Starred Messages</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Content</th>
+                    <th>Author</th>
+                    <th>Stars</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for msg in starred_messages %}
+                <tr>
+                    <td>{{ msg['content'][:50] }}{% if msg['content']|length > 50 %}...{% endif %}</td>
+                    <td><span class="user-mention"><@{{ msg['author_id'] }}></span></td>
+                    <td>⭐ {{ msg['stars'] }}</td>
+                    <td>{{ msg['timestamp'][:16] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No starred messages yet</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
