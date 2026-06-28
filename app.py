@@ -179,7 +179,10 @@ def callback():
     code = request.args.get('code')
     if not code:
         return "❌ No code provided", 400
-    
+    # ... بعد الحصول على بيانات المستخدم وقبل session['user'] ...
+    session.permanent = True
+    session['user'] = { ... }
+    return redirect(url_for('dashboard'))
     # تبادل الكود للحصول على توكن
     data = {
         'client_id': DISCORD_CLIENT_ID,
