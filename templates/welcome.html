@@ -12,4 +12,39 @@
     <div class="card">
         <div class="card-header">
             <h3>Welcome Channel</h3>
-            <span class="badge {% if welcome_channel %}badge-success{% else %}badge-warning{% endif %}
+            <span class="badge {% if welcome_channel %}badge-success{% else %}badge-warning{% endif %}">
+                {% if welcome_channel %}Configured{% else %}Not Set{% endif %}
+            </span>
+        </div>
+        <div class="card-body">
+            {% if welcome_channel %}
+            <p>Current: <span class="channel-mention"><#{{ welcome_channel['value'] }}></span></p>
+            {% else %}
+            <p class="text-muted">No welcome channel set</p>
+            {% endif %}
+            <button class="btn btn-primary">Change Channel</button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Goodbye Channel</h3>
+            <span class="badge badge-warning">Not Set</span>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">No goodbye channel set</p>
+            <button class="btn btn-primary">Set Channel</button>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3>Welcome Message</h3>
+    </div>
+    <div class="card-body">
+        <textarea class="form-textarea" rows="4">🎌 {member} مرحبًا بك في TOKYO COMMUNITY!</textarea>
+        <button class="btn btn-primary mt-2">Save</button>
+    </div>
+</div>
+{% endblock %}
