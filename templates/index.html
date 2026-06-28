@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Overview{% endblock %}
+
+{% block content %}
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card neon-blue">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <h3>Total Members</h3>
+            <p class="stat-number">{{ members }}</p>
+        </div>
+    </div>
+    
+    <div class="stat-card neon-purple">
+        <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-info">
+            <h3>Warnings</h3>
+            <p class="stat-number">{{ warnings }}</p>
+        </div>
+    </div>
+    
+    <div class="stat-card neon-pink">
+        <div class="stat-icon"><i class="fas fa-ticket"></i></div>
+        <div class="stat-info">
+            <h3>Open Tickets</h3>
+            <p class="stat-number">{{ tickets }}</p>
+        </div>
+    </div>
+    
+    <div class="stat-card neon-cyan">
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info">
+            <h3>Closed Tickets</h3>
+            <p class="stat-number">{{ closed_tickets }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Two Column Layout -->
+<div class="two-column">
+    <!-- Top Levels -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-crown"></i> Top Levels</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Level</th>
+                        <th>XP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in top_levels %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><span class="user-mention"><@{{ user['user_id'] }}></span></td>
+                        <td><span class="level-badge">{{ user['level'] }}</span></td>
+                        <td>{{ user['xp'] }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">لا توجد بيانات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Recent Warnings -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-clock"></i> Recent Warnings</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Reason</th>
+                        <th>Moderator</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for warn in recent_warnings %}
+                    <tr>
+                        <td><span class="user-mention"><@{{ warn['user_id'] }}></span></td>
+                        <td>{{ warn['reason'][:30] }}{% if warn['reason']|length > 30 %}...{% endif %}</td>
+                        <td><span class="user-mention"><@{{ warn['moderator_id'] }}></span></td>
+                        <td>{{ warn['timestamp'][:16] }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">لا توجد تحذيرات</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="action-buttons">
+                <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Add Admin</button>
+                <button class="btn btn-danger"><i class="fas fa-ban"></i> Ban Member</button>
+                <button class="btn btn-warning"><i class="fas fa-clock"></i> Timeout</button>
+                <button class="btn btn-info"><i class="fas fa-exclamation-triangle"></i> Warn</button>
+                <button class="btn btn-success"><i class="fas fa-ticket"></i> Create Ticket</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
