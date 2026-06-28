@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ guild.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>
+        {% if guild.icon %}
+        <img src="https://cdn.discordapp.com/icons/{{ guild.id }}/{{ guild.icon }}.png" 
+             style="width: 32px; height: 32px; border-radius: 50%; vertical-align: middle; margin-right: 12px;">
+        {% endif %}
+        {{ guild.name }}
+    </h2>
+    <a href="/dashboard" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> العودة للسيرفرات</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card neon-blue">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <h3>الأعضاء</h3>
+            <p class="stat-number">0</p>
+        </div>
+    </div>
+    <div class="stat-card neon-purple">
+        <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-info">
+            <h3>التحذيرات</h3>
+            <p class="stat-number">0</p>
+        </div>
+    </div>
+    <div class="stat-card neon-pink">
+        <div class="stat-icon"><i class="fas fa-ticket"></i></div>
+        <div class="stat-info">
+            <h3>التكتات المفتوحة</h3>
+            <p class="stat-number">0</p>
+        </div>
+    </div>
+    <div class="stat-card neon-cyan">
+        <div class="stat-icon"><i class="fas fa-level-up-alt"></i></div>
+        <div class="stat-info">
+            <h3>أعلى مستوى</h3>
+            <p class="stat-number">0</p>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-cog"></i> إعدادات السيرفر</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">قم بإعداد البوت لهذا السيرفر</p>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                <button class="btn btn-primary" onclick="alert('سيتم فتح إعدادات الترحيب')">
+                    <i class="fas fa-hand-wave"></i> إعدادات الترحيب
+                </button>
+                <button class="btn btn-info" onclick="alert('سيتم فتح إعدادات التكتات')">
+                    <i class="fas fa-ticket"></i> إعدادات التكتات
+                </button>
+                <button class="btn btn-warning" onclick="alert('سيتم فتح إعدادات المستويات')">
+                    <i class="fas fa-level-up-alt"></i> إعدادات المستويات
+                </button>
+                <button class="btn btn-secondary" onclick="alert('سيتم فتح إعدادات اللوقات')">
+                    <i class="fas fa-clipboard-list"></i> إعدادات اللوقات
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-robot"></i> حالة البوت</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #00ff88;"></span>
+                <span>البوت متصل</span>
+            </div>
+            <div class="log-item">
+                <span>آخر تحديث</span>
+                <span class="text-muted">{{ datetime.now().strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            <div class="log-item">
+                <span>الأعضاء المسجلين</span>
+                <span class="text-muted">0</span>
+            </div>
+            <button class="btn btn-danger" style="margin-top: 16px; width: 100%;" onclick="if(confirm('هل أنت متأكد؟')) alert('تم إزالة البوت من السيرفر')">
+                <i class="fas fa-trash"></i> إزالة البوت من السيرفر
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
