@@ -2,10 +2,9 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import sqlite3
 import os
 import requests
-import jwt
+import json
 from datetime import datetime, timedelta
 from functools import wraps
-import json
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tokyo_secret_key_2026')
@@ -40,11 +39,10 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# ====== إنشاء الجداول (بما فيها جدول المستخدمين) ======
+# ====== إنشاء الجداول ======
 def init_db():
     conn = get_db_connection()
     
-    # الجداول القديمة
     conn.execute('''CREATE TABLE IF NOT EXISTS levels (
         user_id INTEGER PRIMARY KEY,
         xp INTEGER DEFAULT 0,
@@ -112,7 +110,6 @@ def init_db():
         timestamp TEXT
     )''')
     
-    # ====== جدول المستخدمين ======
     conn.execute('''CREATE TABLE IF NOT EXISTS dashboard_users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         discord_id TEXT UNIQUE,
@@ -161,10 +158,23 @@ def save_user(discord_id, username, avatar, access_token, refresh_token, expires
     conn.commit()
     conn.close()
 
+# ====== 🔥 دالة لتنظيف البيانات قبل التخزين في Session ======
+def clean_guilds(guilds):
+    """تحويل بيانات السيرفرات إلى صيغة JSON آمنة"""
+    safe_guilds = []
+    for guild in guilds:
+        safe_guilds.append({
+            'id': str(guild.get('id', '')),
+            'name': guild.get('name', 'Unknown'),
+            'icon': guild.get('icon', ''),
+            'permissions': str(guild.get('permissions', '0')),
+            'owner': bool(guild.get('owner', False))
+        })
+    return safe_guilds
+
 # ====== مسارات المصادقة ======
 @app.route('/login')
 def login():
-    # رابط تسجيل الدخول عبر ديسكورد
     auth_url = (
         f"{DISCORD_API_BASE}/oauth2/authorize"
         f"?client_id={DISCORD_CLIENT_ID}"
@@ -200,7 +210,6 @@ def callback():
     refresh_token = token_data.get('refresh_token')
     expires_in = token_data.get('expires_in')
     
-    # جلب معلومات المستخدم
     user_response = requests.get(
         f"{DISCORD_API_BASE}/users/@me",
         headers={'Authorization': f'Bearer {access_token}'}
@@ -211,15 +220,13 @@ def callback():
     
     user_data = user_response.json()
     
-    # جلب سيرفرات المستخدم
     guilds_response = requests.get(
         f"{DISCORD_API_BASE}/users/@me/guilds",
         headers={'Authorization': f'Bearer {access_token}'}
     )
     
-    guilds = guilds_response.json() if guilds_response.status_code == 200 else []
+    raw_guilds = guilds_response.json() if guilds_response.status_code == 200 else []
     
-    # حفظ المستخدم في قاعدة البيانات
     save_user(
         user_data['id'],
         user_data['username'],
@@ -229,83 +236,14 @@ def callback():
         expires_in
     )
     
-    # ====== 🔥 التعديل: تحويل guilds إلى JSON آمن ======
-    # تحويل كل guild إلى dict آمن للـ JSON
-    safe_guilds = []
-    for guild in guilds:
-        safe_guilds.append({
-            'id': str(guild.get('id', '')),
-            'name': guild.get('name', 'Unknown'),
-            'icon': guild.get('icon', ''),
-            'permissions': str(guild.get('permissions', '0')),
-            'owner': guild.get('owner', False)
-        })
+    # ====== 🔥 استخدام دالة التنظيف ======
+    safe_guilds = clean_guilds(raw_guilds)
     
-    # تخزين بيانات المستخدم في الجلسة (بدون set)
     session['user'] = {
         'id': str(user_data['id']),
         'username': user_data['username'],
         'avatar': user_data.get('avatar', ''),
-        'guilds': safe_guilds  # ← بيانات آمنة
-    }
-    
-    return redirect(url_for('dashboard'))
-    # تبادل الكود للحصول على توكن
-    data = {
-        'client_id': DISCORD_CLIENT_ID,
-        'client_secret': DISCORD_CLIENT_SECRET,
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': DISCORD_REDIRECT_URI,
-        'scope': 'identify guilds'
-    }
-    
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    response = requests.post(f"{DISCORD_API_BASE}/oauth2/token", data=data, headers=headers)
-    
-    if response.status_code != 200:
-        return f"❌ Error: {response.json()}", 400
-    
-    token_data = response.json()
-    access_token = token_data.get('access_token')
-    refresh_token = token_data.get('refresh_token')
-    expires_in = token_data.get('expires_in')
-    
-    # جلب معلومات المستخدم
-    user_response = requests.get(
-        f"{DISCORD_API_BASE}/users/@me",
-        headers={'Authorization': f'Bearer {access_token}'}
-    )
-    
-    if user_response.status_code != 200:
-        return "❌ Failed to get user info", 400
-    
-    user_data = user_response.json()
-    
-    # جلب سيرفرات المستخدم
-    guilds_response = requests.get(
-        f"{DISCORD_API_BASE}/users/@me/guilds",
-        headers={'Authorization': f'Bearer {access_token}'}
-    )
-    
-    guilds = guilds_response.json() if guilds_response.status_code == 200 else []
-    
-    # حفظ المستخدم في قاعدة البيانات
-    save_user(
-        user_data['id'],
-        user_data['username'],
-        user_data.get('avatar', ''),
-        access_token,
-        refresh_token,
-        expires_in
-    )
-    
-    # تخزين بيانات المستخدم في الجلسة
-    session['user'] = {
-        'id': user_data['id'],
-        'username': user_data['username'],
-        'avatar': user_data.get('avatar', ''),
-        'guilds': guilds
+        'guilds': safe_guilds
     }
     
     return redirect(url_for('dashboard'))
@@ -322,24 +260,9 @@ def dashboard():
     user = session.get('user', {})
     guilds = user.get('guilds', [])
     
-    # تصفية السيرفرات التي يملكها أو التي لديه صلاحيات إدارة
     admin_guilds = []
     for guild in guilds:
         permissions = int(guild.get('permissions', 0))
-        if permissions & 0x8:  # Administrator
-            admin_guilds.append(guild)
-    
-    return render_template('dashboard.html', 
-        user=user,
-        guilds=admin_guilds,
-        all_guilds=guilds
-    )
-    
-    # تصفية السيرفرات التي يملكها أو التي لديه صلاحيات إدارة
-    admin_guilds = []
-    for guild in guilds:
-        permissions = int(guild.get('permissions', 0))
-        # 0x8 = Administrator (يمكن تعديلها حسب احتياجك)
         if permissions & 0x8:
             admin_guilds.append(guild)
     
@@ -349,7 +272,7 @@ def dashboard():
         all_guilds=guilds
     )
 
-# ====== الصفحة الرئيسية (تسجيل الدخول أولاً) ======
+# ====== الصفحة الرئيسية ======
 @app.route('/')
 def index():
     if 'user' in session:
@@ -363,7 +286,6 @@ def server_dashboard(guild_id):
     user = session.get('user', {})
     guilds = user.get('guilds', [])
     
-    # البحث عن السيرفر
     selected_guild = None
     for guild in guilds:
         if guild['id'] == guild_id:
@@ -377,27 +299,6 @@ def server_dashboard(guild_id):
         user=user,
         guild=selected_guild,
         datetime=datetime
-    )
-    
-    # البحث عن السيرفر
-    selected_guild = None
-    for guild in guilds:
-        if guild['id'] == guild_id:
-            selected_guild = guild
-            break
-    
-    if not selected_guild:
-        return "❌ Server not found", 404
-    
-    # جلب البيانات من قاعدة البوت للسيرفر
-    conn = get_db_connection()
-    # ملاحظة: قاعدة البيانات الحالية لا تحتوي على guild_id
-    # يمكن إضافتها في المستقبل
-    conn.close()
-    
-    return render_template('server_dashboard.html',
-        user=user,
-        guild=selected_guild
     )
 
 # ====== باقي الصفحات (مع التحقق من الدخول) ======
