@@ -30,6 +30,83 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+# ====== إنشاء الجداول ======
+def init_db():
+    conn = get_db_connection()
+    conn.execute('''CREATE TABLE IF NOT EXISTS levels (
+        user_id INTEGER PRIMARY KEY,
+        xp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 0,
+        total_messages INTEGER DEFAULT 0
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS warnings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        reason TEXT,
+        moderator_id INTEGER,
+        timestamp TEXT
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS tickets (
+        channel_id INTEGER PRIMARY KEY,
+        user_id INTEGER,
+        status TEXT DEFAULT 'open',
+        assigned_to INTEGER DEFAULT NULL,
+        created_at TEXT
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS autoreply (
+        trigger TEXT PRIMARY KEY,
+        response TEXT
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS auto_roles (
+        level INTEGER PRIMARY KEY,
+        role_id INTEGER
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS mod_actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT,
+        target_id INTEGER,
+        moderator_id INTEGER,
+        reason TEXT,
+        timestamp TEXT
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS self_roles (
+        role_id INTEGER PRIMARY KEY,
+        emoji TEXT
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        service TEXT,
+        identifier TEXT,
+        channel_id INTEGER
+    )''')
+    
+    conn.execute('''CREATE TABLE IF NOT EXISTS starboard_messages (
+        message_id INTEGER PRIMARY KEY,
+        content TEXT,
+        author_id INTEGER,
+        stars INTEGER,
+        timestamp TEXT
+    )''')
+    
+    conn.commit()
+    conn.close()
+    print("✅ Database tables created successfully!")
+
+# استدعاء إنشاء الجداول
+init_db()
+
 # ====== الصفحة الرئيسية ======
 @app.route('/')
 def index():
@@ -52,7 +129,7 @@ def index():
 def test():
     return "✅ Test route is working!"
 
-# ====== الصفحات ======
+# ====== باقي الصفحات ======
 @app.route('/moderation')
 def moderation():
     return render_template('moderation.html')
