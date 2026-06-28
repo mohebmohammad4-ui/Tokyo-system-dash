@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}AutoMod{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-shield-halved"></i> AutoMod</h2>
+    <p>إعدادات الحماية التلقائية</p>
+</div>
+
+<div class="automod-grid">
+    <div class="card">
+        <div class="card-header">
+            <h3>Spam (5 messages/5 sec)</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Bad Words</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Duplicated Text</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Repeated Messages</h3>
+            <span class="badge badge-premium">Premium</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox" disabled>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Discord Invites</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Links</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Spammed Caps (70% > CAPS)</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Emotion Spam</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Mass Mention</h3>
+            <span class="badge badge-warning">Need Setup</span>
+        </div>
+        <div class="card-body">
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+</div>
+
+<div class="automod-settings">
+    <div class="card">
+        <div class="card-header">
+            <h3>Ignored Channels</h3>
+        </div>
+        <div class="card-body">
+            <select class="form-select">
+                <option>Select channels...</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Ignored Roles</h3>
+        </div>
+        <div class="card-body">
+            <select class="form-select">
+                <option>Select roles...</option>
+            </select>
+        </div>
+    </div>
+</div>
+{% endblock %}
