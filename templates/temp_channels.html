@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Temporary Channels{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-clock"></i> Temporary Channels</h2>
+    <p>إدارة الرومات الصوتية المؤقتة</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>⚙️ Settings</h3>
+    </div>
+    <div class="card-body">
+        <div class="setting-item">
+            <span class="label">Temp Category:</span>
+            <span class="value">
+                {% if temp_category %}
+                <span class="channel-mention"><#{{ temp_category['value'] }}></span>
+                {% else %}
+                <span class="text-muted">❌ Not set</span>
+                {% endif %}
+            </span>
+            <button class="btn btn-secondary btn-sm">Change</button>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3>📋 Active Temp Channels</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Channel</th>
+                    <th>Owner</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="3" class="text-center text-muted">No active temp channels</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
