@@ -2,3 +2,7 @@ Flask==2.3.2
 Flask-SQLAlchemy==3.0.5
 python-dotenv==1.0.0
 gunicorn==21.2.0
+pip install Flask==2.3.2
+pip install Flask-SQLAlchemy==3.0.5
+pip install python-dotenv==1.0.0
+pip install gunicorn==21.2.0
