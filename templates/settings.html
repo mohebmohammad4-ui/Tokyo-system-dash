@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-gear"></i> Settings</h2>
+    <p>جميع إعدادات البوت</p>
+</div>
+
+<div class="settings-grid">
+    {% for setting in settings %}
+    <div class="card">
+        <div class="card-header">
+            <h3>{{ setting['key'].replace('_', ' ').title() }}</h3>
+        </div>
+        <div class="card-body">
+            <p><code>{{ setting['value'] }}</code></p>
+            <button class="btn btn-secondary btn-sm">Edit</button>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">لا توجد إعدادات</p>
+    {% endfor %}
+</div>
+{% endblock %}
