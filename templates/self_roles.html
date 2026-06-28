@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Self-Assignable Roles{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-user-check"></i> Self-Assignable Roles</h2>
+    <p>رتب يمكن للأعضاء أخذها بأنفسهم</p>
+    <button class="btn btn-primary"><i class="fas fa-plus"></i> Add Role</button>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Role</th>
+                    <th>Emoji</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role in self_roles %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><@&{{ role['role_id'] }}></td>
+                    <td>{{ role['emoji'] or '❌' }}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm">Delete</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No self-assignable roles</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
