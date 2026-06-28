@@ -19,33 +19,34 @@
         <div class="stat-icon"><i class="fas fa-users"></i></div>
         <div class="stat-info">
             <h3>الأعضاء</h3>
-            <p class="stat-number">0</p>
+            <p class="stat-number" id="member-count">0</p>
         </div>
     </div>
     <div class="stat-card neon-purple">
         <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
         <div class="stat-info">
             <h3>التحذيرات</h3>
-            <p class="stat-number">0</p>
+            <p class="stat-number" id="warning-count">0</p>
         </div>
     </div>
     <div class="stat-card neon-pink">
         <div class="stat-icon"><i class="fas fa-ticket"></i></div>
         <div class="stat-info">
             <h3>التكتات المفتوحة</h3>
-            <p class="stat-number">0</p>
+            <p class="stat-number" id="ticket-count">0</p>
         </div>
     </div>
     <div class="stat-card neon-cyan">
         <div class="stat-icon"><i class="fas fa-level-up-alt"></i></div>
         <div class="stat-info">
             <h3>أعلى مستوى</h3>
-            <p class="stat-number">0</p>
+            <p class="stat-number" id="top-level">0</p>
         </div>
     </div>
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+    <!-- إعدادات السيرفر -->
     <div class="card">
         <div class="card-header">
             <h3><i class="fas fa-cog"></i> إعدادات السيرفر</h3>
@@ -53,30 +54,52 @@
         <div class="card-body">
             <p class="text-muted">قم بإعداد البوت لهذا السيرفر</p>
             <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-                <button class="btn btn-primary" onclick="alert('سيتم فتح إعدادات الترحيب')">
+                
+                <!-- رتبة الصلاحيات -->
+                <div class="setting-item">
+                    <span class="label">🔑 رتبة الصلاحيات:</span>
+                    <select class="form-select" id="command-role-select" style="width: auto; flex: 1; margin: 0 12px;">
+                        <option value="">جاري التحميل...</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="saveCommandRole()">حفظ</button>
+                </div>
+
+                <!-- رتبة الدعم -->
+                <div class="setting-item">
+                    <span class="label">🛡️ رتبة الدعم:</span>
+                    <select class="form-select" id="support-role-select" style="width: auto; flex: 1; margin: 0 12px;">
+                        <option value="">جاري التحميل...</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="saveSupportRole()">حفظ</button>
+                </div>
+
+                <hr style="border-color: #1f2a3a; margin: 8px 0;">
+
+                <button class="btn btn-primary" onclick="openSettings('welcome')">
                     <i class="fas fa-hand-wave"></i> إعدادات الترحيب
                 </button>
-                <button class="btn btn-info" onclick="alert('سيتم فتح إعدادات التكتات')">
+                <button class="btn btn-info" onclick="openSettings('tickets')">
                     <i class="fas fa-ticket"></i> إعدادات التكتات
                 </button>
-                <button class="btn btn-warning" onclick="alert('سيتم فتح إعدادات المستويات')">
+                <button class="btn btn-warning" onclick="openSettings('leveling')">
                     <i class="fas fa-level-up-alt"></i> إعدادات المستويات
                 </button>
-                <button class="btn btn-secondary" onclick="alert('سيتم فتح إعدادات اللوقات')">
+                <button class="btn btn-secondary" onclick="openSettings('logs')">
                     <i class="fas fa-clipboard-list"></i> إعدادات اللوقات
                 </button>
             </div>
         </div>
     </div>
     
+    <!-- حالة البوت -->
     <div class="card">
         <div class="card-header">
             <h3><i class="fas fa-robot"></i> حالة البوت</h3>
         </div>
         <div class="card-body">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #00ff88;"></span>
-                <span>البوت متصل</span>
+                <span id="bot-status-dot" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ffd700;"></span>
+                <span id="bot-status-text">جاري التحقق...</span>
             </div>
             <div class="log-item">
                 <span>آخر تحديث</span>
@@ -84,12 +107,302 @@
             </div>
             <div class="log-item">
                 <span>الأعضاء المسجلين</span>
-                <span class="text-muted">0</span>
+                <span class="text-muted" id="registered-members">0</span>
             </div>
-            <button class="btn btn-danger" style="margin-top: 16px; width: 100%;" onclick="if(confirm('هل أنت متأكد؟')) alert('تم إزالة البوت من السيرفر')">
+            <button class="btn btn-danger" style="margin-top: 16px; width: 100%;" onclick="removeBot()">
                 <i class="fas fa-trash"></i> إزالة البوت من السيرفر
             </button>
         </div>
     </div>
 </div>
+
+<!-- القنوات والإعدادات الإضافية -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+    <!-- قنوات اللوقات -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-clipboard-list"></i> قنوات اللوقات</h3>
+        </div>
+        <div class="card-body">
+            <div class="setting-item">
+                <span class="label">قناة اللوقات الرئيسية:</span>
+                <select class="form-select" id="log-channel-select" style="width: auto; flex: 1; margin: 0 12px;">
+                    <option value="">اختر قناة...</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="saveLogChannel()">حفظ</button>
+            </div>
+            <div class="setting-item" style="margin-top: 8px;">
+                <span class="label">قناة الترحيب:</span>
+                <select class="form-select" id="welcome-channel-select" style="width: auto; flex: 1; margin: 0 12px;">
+                    <option value="">اختر قناة...</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="saveWelcomeChannel()">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- إجراءات سريعة -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-bolt"></i> إجراءات سريعة</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn btn-primary" onclick="quickAction('sync')">
+                    <i class="fas fa-sync"></i> مزامنة البوت
+                </button>
+                <button class="btn btn-success" onclick="quickAction('ticketpanel')">
+                    <i class="fas fa-ticket"></i> إنشاء لوحة التكتات
+                </button>
+                <button class="btn btn-info" onclick="quickAction('setwelcome')">
+                    <i class="fas fa-hand-wave"></i> تفعيل الترحيب
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== JavaScript ====== -->
+<script>
+// ====== تحميل القنوات والرتب ======
+document.addEventListener('DOMContentLoaded', function() {
+    const guildId = '{{ guild.id }}';
+    
+    // تحميل الرتب
+    fetch(`/api/guild_roles/${guildId}`)
+        .then(res => res.json())
+        .then(roles => {
+            const selects = ['command-role-select', 'support-role-select'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    select.innerHTML = '<option value="">اختر رتبة...</option>';
+                    roles.forEach(role => {
+                        const option = document.createElement('option');
+                        option.value = role.id;
+                        option.textContent = role.name;
+                        select.appendChild(option);
+                    });
+                }
+            });
+        })
+        .catch(err => console.error('Error loading roles:', err));
+    
+    // تحميل القنوات
+    fetch(`/api/guild_channels/${guildId}`)
+        .then(res => res.json())
+        .then(channels => {
+            const selects = ['log-channel-select', 'welcome-channel-select'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    select.innerHTML = '<option value="">اختر قناة...</option>';
+                    channels.forEach(channel => {
+                        if (channel.type === 0) { // نصية فقط
+                            const option = document.createElement('option');
+                            option.value = channel.id;
+                            option.textContent = `#${channel.name}`;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            });
+        })
+        .catch(err => console.error('Error loading channels:', err));
+    
+    // تحميل الإحصائيات
+    loadStats(guildId);
+    
+    // التحقق من حالة البوت
+    checkBotStatus(guildId);
+});
+
+// ====== تحميل الإحصائيات ======
+function loadStats(guildId) {
+    fetch(`/api/guild_stats/${guildId}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('member-count').textContent = data.members || 0;
+            document.getElementById('warning-count').textContent = data.warnings || 0;
+            document.getElementById('ticket-count').textContent = data.tickets || 0;
+            document.getElementById('top-level').textContent = data.top_level || 0;
+            document.getElementById('registered-members').textContent = data.registered || 0;
+        })
+        .catch(err => console.error('Error loading stats:', err));
+}
+
+// ====== التحقق من حالة البوت ======
+function checkBotStatus(guildId) {
+    fetch(`/api/bot_status/${guildId}`)
+        .then(res => res.json())
+        .then(data => {
+            const dot = document.getElementById('bot-status-dot');
+            const text = document.getElementById('bot-status-text');
+            if (data.online) {
+                dot.style.background = '#00ff88';
+                text.textContent = '🟢 البوت متصل';
+            } else {
+                dot.style.background = '#ff2d55';
+                text.textContent = '🔴 البوت غير متصل';
+            }
+        })
+        .catch(() => {
+            document.getElementById('bot-status-text').textContent = '⚠️ لا يمكن التحقق';
+        });
+}
+
+// ====== حفظ الإعدادات ======
+function saveCommandRole() {
+    const roleId = document.getElementById('command-role-select').value;
+    if (!roleId) return alert('❌ الرجاء اختيار رتبة');
+    
+    fetch('/api/set_command_role', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: '{{ guild.id }}', role_id: roleId})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('✅ تم حفظ رتبة الصلاحيات بنجاح!');
+        } else {
+            alert('❌ حدث خطأ: ' + (data.error || 'غير معروف'));
+        }
+    });
+}
+
+function saveSupportRole() {
+    const roleId = document.getElementById('support-role-select').value;
+    if (!roleId) return alert('❌ الرجاء اختيار رتبة');
+    
+    fetch('/api/set_support_role', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: '{{ guild.id }}', role_id: roleId})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('✅ تم حفظ رتبة الدعم بنجاح!');
+        } else {
+            alert('❌ حدث خطأ: ' + (data.error || 'غير معروف'));
+        }
+    });
+}
+
+function saveLogChannel() {
+    const channelId = document.getElementById('log-channel-select').value;
+    if (!channelId) return alert('❌ الرجاء اختيار قناة');
+    
+    fetch('/api/set_log_channel', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: '{{ guild.id }}', channel_id: channelId})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('✅ تم حفظ قناة اللوقات بنجاح!');
+        } else {
+            alert('❌ حدث خطأ: ' + (data.error || 'غير معروف'));
+        }
+    });
+}
+
+function saveWelcomeChannel() {
+    const channelId = document.getElementById('welcome-channel-select').value;
+    if (!channelId) return alert('❌ الرجاء اختيار قناة');
+    
+    fetch('/api/set_welcome_channel', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: '{{ guild.id }}', channel_id: channelId})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('✅ تم حفظ قناة الترحيب بنجاح!');
+        } else {
+            alert('❌ حدث خطأ: ' + (data.error || 'غير معروف'));
+        }
+    });
+}
+
+// ====== إجراءات سريعة ======
+function quickAction(action) {
+    fetch(`/api/quick_action/${action}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: '{{ guild.id }}'})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('✅ تم تنفيذ الإجراء بنجاح!');
+            if(action === 'ticketpanel') {
+                alert('📌 تم إنشاء لوحة التكتات في القناة الحالية');
+            }
+        } else {
+            alert('❌ حدث خطأ: ' + (data.error || 'غير معروف'));
+        }
+    });
+}
+
+function openSettings(type) {
+    alert(`📌 سيتم فتح إعدادات ${type} قريباً`);
+}
+
+function removeBot() {
+    if(confirm('⚠️ هل أنت متأكد من إزالة البوت من هذا السيرفر؟')) {
+        if(confirm('❌ هذه العملية نهائية! هل أنت متأكد؟')) {
+            fetch('/api/remove_bot', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({guild_id: '{{ guild.id }}'})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert('✅ تم إزالة البوت بنجاح!');
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('❌ حدث خطأ: ' + (data.error || 'غير معروف'));
+                }
+            });
+        }
+    }
+}
+
+// ====== تحديث الإحصائيات كل 30 ثانية ======
+setInterval(() => {
+    loadStats('{{ guild.id }}');
+}, 30000);
+</script>
+
+<style>
+.setting-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.setting-item .label {
+    min-width: 100px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+.setting-item .form-select {
+    flex: 1;
+    min-width: 120px;
+}
+@media (max-width: 768px) {
+    .setting-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .setting-item .label {
+        min-width: auto;
+    }
+}
+</style>
 {% endblock %}
