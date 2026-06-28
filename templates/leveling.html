@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Leveling System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-level-up-alt"></i> Leveling System</h2>
+    <p>نظام المستويات والخبرة</p>
+</div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+    <div class="stat-card neon-blue">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <h3>Total Members</h3>
+            <p class="stat-number">{{ total_members }}</p>
+        </div>
+    </div>
+    <div class="stat-card neon-gold">
+        <div class="stat-icon"><i class="fas fa-crown"></i></div>
+        <div class="stat-info">
+            <h3>Top Level</h3>
+            <p class="stat-number">{% if top_10 %}Lv.{{ top_10[0]['level'] }}{% else %}0{% endif %}</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>🏆 Top 10 Members</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>User</th>
+                    <th>Level</th>
+                    <th>XP</th>
+                    <th>Progress</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in top_10 %}
+                <tr>
+                    <td>
+                        {% if loop.index == 1 %}🥇
+                        {% elif loop.index == 2 %}🥈
+                        {% elif loop.index == 3 %}🥉
+                        {% else %}#{{ loop.index }}{% endif %}
+                    </td>
+                    <td><span class="user-mention"><@{{ user['user_id'] }}></span></td>
+                    <td><span class="level-badge">{{ user['level'] }}</span></td>
+                    <td>{{ user['xp'] }}</td>
+                    <td>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ (user['xp'] / 200) * 100 }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">لا توجد بيانات</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
