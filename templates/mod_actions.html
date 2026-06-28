@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Mod Actions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fas fa-clipboard-list"></i> Mod Actions</h2>
+    <p>سجل أوامر الإدارة</p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="filters mb-3">
+            <select class="form-select" style="width: auto; display: inline-block;">
+                <option value="all">All Actions</option>
+                <option value="ban">Ban</option>
+                <option value="timeout">Timeout</option>
+                <option value="warn">Warn</option>
+                <option value="kick">Kick</option>
+            </select>
+        </div>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Target</th>
+                    <th>Moderator</th>
+                    <th>Reason</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for action in mod_actions %}
+                <tr>
+                    <td>
+                        <span class="badge 
+                            {% if action['action'] == 'ban' %}badge-danger
+                            {% elif action['action'] == 'timeout' %}badge-warning
+                            {% elif action['action'] == 'warn' %}badge-info
+                            {% else %}badge-secondary{% endif %}">
+                            {{ action['action'] }}
+                        </span>
+                    </td>
+                    <td><span class="user-mention"><@{{ action['target_id'] }}></span></td>
+                    <td><span class="user-mention"><@{{ action['moderator_id'] }}></span></td>
+                    <td>{{ action['reason'][:50] }}{% if action['reason']|length > 50 %}...{% endif %}</td>
+                    <td>{{ action['timestamp'][:16] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No moderation actions recorded</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
