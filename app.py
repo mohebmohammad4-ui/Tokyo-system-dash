@@ -118,6 +118,7 @@ def init_db():
         access_token TEXT,
         refresh_token TEXT,
         token_expires INTEGER,
+        guilds TEXT,
         created_at TEXT
     )''')
     
@@ -127,17 +128,8 @@ def init_db():
 
 init_db()
 
-# ====== دالة التحقق من تسجيل الدخول ======
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user' not in session:
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-# ====== دالة جلب مستخدم من قاعدة البيانات ======
-def get_user(discord_id):
+# ====== دوال المستخدمين ======
+def get_user_by_discord_id(discord_id):
     conn = get_db_connection()
     user = conn.execute(
         "SELECT * FROM dashboard_users WHERE discord_id = ?",
@@ -146,31 +138,39 @@ def get_user(discord_id):
     conn.close()
     return user
 
-def save_user(discord_id, username, avatar, access_token, refresh_token, expires_in):
+def create_or_update_user(discord_id, username, avatar, access_token, refresh_token, expires_in, guilds):
     conn = get_db_connection()
     expires_at = int(datetime.now().timestamp()) + expires_in
+    guilds_json = json.dumps(guilds)  # تحويل إلى JSON
+    
     conn.execute(
         """INSERT OR REPLACE INTO dashboard_users 
-           (discord_id, username, avatar, access_token, refresh_token, token_expires, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (str(discord_id), username, avatar, access_token, refresh_token, expires_at, datetime.now().isoformat())
+           (discord_id, username, avatar, access_token, refresh_token, token_expires, guilds, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (str(discord_id), username, avatar, access_token, refresh_token, expires_at, guilds_json, datetime.now().isoformat())
     )
     conn.commit()
     conn.close()
 
-# ====== 🔥 دالة لتنظيف البيانات قبل التخزين في Session ======
-def clean_guilds(guilds):
-    """تحويل بيانات السيرفرات إلى صيغة JSON آمنة"""
-    safe_guilds = []
-    for guild in guilds:
-        safe_guilds.append({
-            'id': str(guild.get('id', '')),
-            'name': guild.get('name', 'Unknown'),
-            'icon': guild.get('icon', ''),
-            'permissions': str(guild.get('permissions', '0')),
-            'owner': bool(guild.get('owner', False))
-        })
-    return safe_guilds
+def get_user_guilds(discord_id):
+    conn = get_db_connection()
+    result = conn.execute(
+        "SELECT guilds FROM dashboard_users WHERE discord_id = ?",
+        (str(discord_id),)
+    ).fetchone()
+    conn.close()
+    if result:
+        return json.loads(result['guilds'])
+    return []
+
+# ====== دالة التحقق من تسجيل الدخول ======
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # ====== مسارات المصادقة ======
 @app.route('/login')
@@ -227,24 +227,32 @@ def callback():
     
     raw_guilds = guilds_response.json() if guilds_response.status_code == 200 else []
     
-    save_user(
+    # تنظيف البيانات
+    clean_guilds = []
+    for guild in raw_guilds:
+        clean_guilds.append({
+            'id': str(guild.get('id', '')),
+            'name': guild.get('name', 'Unknown'),
+            'icon': guild.get('icon', ''),
+            'permissions': str(guild.get('permissions', '0')),
+            'owner': bool(guild.get('owner', False))
+        })
+    
+    # حفظ في قاعدة البيانات
+    create_or_update_user(
         user_data['id'],
         user_data['username'],
         user_data.get('avatar', ''),
         access_token,
         refresh_token,
-        expires_in
+        expires_in,
+        clean_guilds
     )
     
-    # ====== 🔥 استخدام دالة التنظيف ======
-    safe_guilds = clean_guilds(raw_guilds)
-    
-    session['user'] = {
-        'id': str(user_data['id']),
-        'username': user_data['username'],
-        'avatar': user_data.get('avatar', ''),
-        'guilds': safe_guilds
-    }
+    # تخزين فقط الـ ID في Session
+    session['user_id'] = str(user_data['id'])
+    session['username'] = user_data['username']
+    session['avatar'] = user_data.get('avatar', '')
     
     return redirect(url_for('dashboard'))
 
@@ -253,12 +261,19 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+# ====== دالة جلب بيانات المستخدم ======
+def get_current_user():
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    return get_user_by_discord_id(user_id)
+
 # ====== لوحة التحكم الرئيسية ======
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    user = session.get('user', {})
-    guilds = user.get('guilds', [])
+    user_id = session.get('user_id')
+    guilds = get_user_guilds(user_id)
     
     admin_guilds = []
     for guild in guilds:
@@ -267,7 +282,7 @@ def dashboard():
             admin_guilds.append(guild)
     
     return render_template('dashboard.html', 
-        user=user,
+        user={'id': user_id, 'username': session.get('username', ''), 'avatar': session.get('avatar', '')},
         guilds=admin_guilds,
         all_guilds=guilds
     )
@@ -275,7 +290,7 @@ def dashboard():
 # ====== الصفحة الرئيسية ======
 @app.route('/')
 def index():
-    if 'user' in session:
+    if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('login.html')
 
@@ -283,8 +298,8 @@ def index():
 @app.route('/server/<guild_id>')
 @login_required
 def server_dashboard(guild_id):
-    user = session.get('user', {})
-    guilds = user.get('guilds', [])
+    user_id = session.get('user_id')
+    guilds = get_user_guilds(user_id)
     
     selected_guild = None
     for guild in guilds:
@@ -296,12 +311,12 @@ def server_dashboard(guild_id):
         return "❌ Server not found", 404
     
     return render_template('server_dashboard.html',
-        user=user,
+        user={'id': user_id, 'username': session.get('username', ''), 'avatar': session.get('avatar', '')},
         guild=selected_guild,
         datetime=datetime
     )
 
-# ====== باقي الصفحات (مع التحقق من الدخول) ======
+# ====== باقي الصفحات ======
 @app.route('/moderation')
 @login_required
 def moderation():
