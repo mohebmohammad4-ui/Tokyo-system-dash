@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOKYO SYSTEM - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            background: #1a1a1a;
+            border: 1px solid #1f2a3a;
+            border-radius: 20px;
+            padding: 48px 40px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .logo {
+            margin-bottom: 32px;
+        }
+        .neon-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00d4ff, #7b2ffc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .sub-logo {
+            font-size: 14px;
+            color: #8899aa;
+            letter-spacing: 4px;
+            margin-top: -4px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        p {
+            color: #8899aa;
+            margin-bottom: 32px;
+        }
+        .btn-discord {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 32px;
+            background: #5865F2;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            font-family: 'Cairo', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .btn-discord:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(88, 101, 242, 0.4);
+        }
+        .btn-discord i {
+            font-size: 24px;
+        }
+        .features {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #8899aa;
+            font-size: 14px;
+        }
+        .feature-item i {
+            color: #00d4ff;
+            width: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <span class="neon-text">TOKYO</span>
+            <span class="sub-logo">SYSTEM</span>
+        </div>
+        
+        <h1>مرحباً بك</h1>
+        <p>سجل الدخول بحساب ديسكورد للوصول إلى لوحة التحكم</p>
+        
+        <a href="/login" class="btn-discord">
+            <i class="fab fa-discord"></i>
+            تسجيل الدخول بديسكورد
+        </a>
+        
+        <div class="features">
+            <div class="feature-item">
+                <i class="fas fa-shield-halved"></i>
+                إدارة السيرفرات بصلاحيات كاملة
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-chart-line"></i>
+                إحصائيات وتحليلات لحظية
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-sliders-h"></i>
+                التحكم الكامل بجميع أنظمة البوت
+            </div>
+        </div>
+    </div>
+</body>
+</html>
