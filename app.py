@@ -5,9 +5,18 @@ import requests
 import json
 from datetime import datetime, timedelta
 from functools import wraps
+from flask.json import JSONEncoder
+
+# ====== JSON Encoder مخصص للتعامل مع Set ======
+class CustomJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return super().default(obj)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tokyo_secret_key_2026')
+app.json_encoder = CustomJSONEncoder  # استخدام الـ Encoder المخصص
 
 # ====== إعدادات Discord OAuth2 ======
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID', 'ضع_الـ_Client_ID_هنا')
@@ -227,7 +236,7 @@ def callback():
     
     raw_guilds = guilds_response.json() if guilds_response.status_code == 200 else []
     
-    # تنظيف البيانات
+    # تنظيف البيانات (تحويل أي set إلى list)
     clean_guilds = []
     for guild in raw_guilds:
         clean_guilds.append({
@@ -249,7 +258,7 @@ def callback():
         clean_guilds
     )
     
-    # تخزين فقط الـ ID في Session
+    # ====== 🔥 تخزين فقط القيم البسيطة في Session ======
     session['user_id'] = str(user_data['id'])
     session['username'] = user_data['username']
     session['avatar'] = user_data.get('avatar', '')
@@ -260,27 +269,6 @@ def callback():
 def logout():
     session.clear()
     return redirect(url_for('login'))
-    @app.route('/api/guild_roles/<guild_id>')
-@login_required
-def get_guild_roles(guild_id):
-    user_id = session.get('user_id')
-    user = get_user_by_discord_id(user_id)
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    # جلب الرتب من ديسكورد
-    headers = {'Authorization': f'Bearer {user["access_token"]}'}
-    response = requests.get(
-        f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
-        headers=headers
-    )
-    
-    if response.status_code != 200:
-        return jsonify({'error': 'Failed to fetch roles'}), 400
-    
-    roles = response.json()
-    return jsonify(roles)
 
 # ====== دالة جلب بيانات المستخدم ======
 def get_current_user():
@@ -296,6 +284,17 @@ def dashboard():
     user_id = session.get('user_id')
     guilds = get_user_guilds(user_id)
     
+    # جلب بيانات المستخدم من قاعدة البوت
+    conn = get_db_connection()
+    user_data = conn.execute(
+        "SELECT xp, level FROM levels WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+    
+    xp = user_data['xp'] if user_data else 0
+    level = user_data['level'] if user_data else 0
+    
     admin_guilds = []
     for guild in guilds:
         permissions = int(guild.get('permissions', 0))
@@ -303,7 +302,13 @@ def dashboard():
             admin_guilds.append(guild)
     
     return render_template('dashboard.html', 
-        user={'id': user_id, 'username': session.get('username', ''), 'avatar': session.get('avatar', '')},
+        user={
+            'id': user_id, 
+            'username': session.get('username', ''), 
+            'avatar': session.get('avatar', ''),
+            'xp': xp,
+            'level': level
+        },
         guilds=admin_guilds,
         all_guilds=guilds
     )
@@ -337,7 +342,48 @@ def server_dashboard(guild_id):
         datetime=datetime
     )
 
-# ====== باقي الصفحات ======
+# ====== APIs ======
+@app.route('/api/guild_roles/<guild_id>')
+@login_required
+def get_guild_roles(guild_id):
+    user_id = session.get('user_id')
+    user = get_user_by_discord_id(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    headers = {'Authorization': f'Bearer {user["access_token"]}'}
+    response = requests.get(
+        f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        return jsonify({'error': 'Failed to fetch roles'}), 400
+    
+    return jsonify(response.json())
+
+@app.route('/api/guild_channels/<guild_id>')
+@login_required
+def get_guild_channels(guild_id):
+    user_id = session.get('user_id')
+    user = get_user_by_discord_id(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    headers = {'Authorization': f'Bearer {user["access_token"]}'}
+    response = requests.get(
+        f"{DISCORD_API_BASE}/guilds/{guild_id}/channels",
+        headers=headers
+    )
+    
+    if response.status_code != 200:
+        return jsonify({'error': 'Failed to fetch channels'}), 400
+    
+    return jsonify(response.json())
+
+# باقي الصفحات APIs
 @app.route('/moderation')
 @login_required
 def moderation():
@@ -432,7 +478,6 @@ def mod_actions():
     conn.close()
     return render_template('mod_actions.html', mod_actions=actions)
 
-# ====== APIs ======
 @app.route('/api/addselfrole', methods=['POST'])
 @login_required
 def api_add_self_role():
