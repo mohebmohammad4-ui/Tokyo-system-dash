@@ -27,84 +27,100 @@ def get_db_connection():
     return conn
 
 def init_db():
-    conn = get_db_connection()
-    conn.execute('''CREATE TABLE IF NOT EXISTS levels (
-        user_id INTEGER PRIMARY KEY,
-        xp INTEGER DEFAULT 0,
-        level INTEGER DEFAULT 0
-    )''')
-    conn.execute('''CREATE TABLE IF NOT EXISTS warnings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        reason TEXT,
-        moderator_id INTEGER,
-        timestamp TEXT
-    )''')
-    conn.execute('''CREATE TABLE IF NOT EXISTS tickets (
-        channel_id INTEGER PRIMARY KEY,
-        user_id INTEGER,
-        status TEXT DEFAULT 'open',
-        assigned_to INTEGER DEFAULT NULL,
-        created_at TEXT
-    )''')
-    conn.execute('''CREATE TABLE IF NOT EXISTS autoreply (
-        trigger TEXT PRIMARY KEY,
-        response TEXT
-    )''')
-    conn.execute('''CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT
-    )''')
-    conn.execute('''CREATE TABLE IF NOT EXISTS dashboard_users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        discord_id TEXT UNIQUE,
-        username TEXT,
-        avatar TEXT,
-        access_token TEXT,
-        refresh_token TEXT,
-        token_expires INTEGER,
-        guilds TEXT,
-        created_at TEXT
-    )''')
-    conn.commit()
-    conn.close()
-    print("✅ Database initialized")
+    try:
+        conn = get_db_connection()
+        conn.execute('''CREATE TABLE IF NOT EXISTS levels (
+            user_id INTEGER PRIMARY KEY,
+            xp INTEGER DEFAULT 0,
+            level INTEGER DEFAULT 0
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS warnings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            reason TEXT,
+            moderator_id INTEGER,
+            timestamp TEXT
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS tickets (
+            channel_id INTEGER PRIMARY KEY,
+            user_id INTEGER,
+            status TEXT DEFAULT 'open',
+            assigned_to INTEGER DEFAULT NULL,
+            created_at TEXT
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS autoreply (
+            trigger TEXT PRIMARY KEY,
+            response TEXT
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS dashboard_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            discord_id TEXT UNIQUE,
+            username TEXT,
+            avatar TEXT,
+            access_token TEXT,
+            refresh_token TEXT,
+            token_expires INTEGER,
+            guilds TEXT,
+            created_at TEXT
+        )''')
+        conn.commit()
+        conn.close()
+        print("✅ Database initialized")
+    except Exception as e:
+        print(f"❌ Database init error: {e}")
 
 init_db()
 
 # ====== دوال المستخدمين ======
 def get_user_by_discord_id(discord_id):
-    conn = get_db_connection()
-    user = conn.execute(
-        "SELECT * FROM dashboard_users WHERE discord_id = ?",
-        (str(discord_id),)
-    ).fetchone()
-    conn.close()
-    return user
+    try:
+        conn = get_db_connection()
+        user = conn.execute(
+            "SELECT * FROM dashboard_users WHERE discord_id = ?",
+            (str(discord_id),)
+        ).fetchone()
+        conn.close()
+        return user
+    except Exception as e:
+        print(f"❌ get_user_by_discord_id error: {e}")
+        return None
 
 def create_or_update_user(discord_id, username, avatar, access_token, refresh_token, expires_in, guilds):
-    conn = get_db_connection()
-    expires_at = int(datetime.now().timestamp()) + expires_in
-    guilds_json = json.dumps(guilds)
-    conn.execute(
-        """INSERT OR REPLACE INTO dashboard_users 
-           (discord_id, username, avatar, access_token, refresh_token, token_expires, guilds, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (str(discord_id), username, avatar, access_token, refresh_token, expires_at, guilds_json, datetime.now().isoformat())
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        expires_at = int(datetime.now().timestamp()) + expires_in
+        guilds_json = json.dumps(guilds)
+        conn.execute(
+            """INSERT OR REPLACE INTO dashboard_users 
+               (discord_id, username, avatar, access_token, refresh_token, token_expires, guilds, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (str(discord_id), username, avatar, access_token, refresh_token, expires_at, guilds_json, datetime.now().isoformat())
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ create_or_update_user error: {e}")
+        return False
 
 def get_user_guilds(discord_id):
-    conn = get_db_connection()
-    result = conn.execute(
-        "SELECT guilds FROM dashboard_users WHERE discord_id = ?",
-        (str(discord_id),)
-    ).fetchone()
-    conn.close()
-    if result:
-        return json.loads(result['guilds'])
-    return []
+    try:
+        conn = get_db_connection()
+        result = conn.execute(
+            "SELECT guilds FROM dashboard_users WHERE discord_id = ?",
+            (str(discord_id),)
+        ).fetchone()
+        conn.close()
+        if result:
+            return json.loads(result['guilds'])
+        return []
+    except Exception as e:
+        print(f"❌ get_user_guilds error: {e}")
+        return []
 
 # ====== التحقق من تسجيل الدخول ======
 def login_required(f):
@@ -213,192 +229,268 @@ def index():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    user_id = session.get('user_id')
-    guilds = get_user_guilds(user_id)
-    
-    conn = get_db_connection()
-    user_data = conn.execute(
-        "SELECT xp, level FROM levels WHERE user_id = ?",
-        (user_id,)
-    ).fetchone()
-    conn.close()
-    
-    xp = user_data['xp'] if user_data else 0
-    level = user_data['level'] if user_data else 0
-    
-    admin_guilds = []
-    for guild in guilds:
-        permissions = int(guild.get('permissions', 0))
-        if permissions & 0x8:
-            admin_guilds.append(guild)
-    
-    return render_template('dashboard.html', 
-        user={
-            'id': user_id, 
-            'username': session.get('username', ''), 
-            'avatar': session.get('avatar', ''),
-            'xp': xp,
-            'level': level
-        },
-        guilds=admin_guilds,
-        all_guilds=guilds
-    )
+    try:
+        user_id = session.get('user_id')
+        guilds = get_user_guilds(user_id)
+        
+        conn = get_db_connection()
+        user_data = conn.execute(
+            "SELECT xp, level FROM levels WHERE user_id = ?",
+            (user_id,)
+        ).fetchone()
+        conn.close()
+        
+        xp = user_data['xp'] if user_data else 0
+        level = user_data['level'] if user_data else 0
+        
+        admin_guilds = []
+        for guild in guilds:
+            permissions = int(guild.get('permissions', 0))
+            if permissions & 0x8:
+                admin_guilds.append(guild)
+        
+        return render_template('dashboard.html', 
+            user={
+                'id': user_id, 
+                'username': session.get('username', ''), 
+                'avatar': session.get('avatar', ''),
+                'xp': xp,
+                'level': level
+            },
+            guilds=admin_guilds,
+            all_guilds=guilds
+        )
+    except Exception as e:
+        print(f"❌ Dashboard error: {e}")
+        return f"❌ Error loading dashboard: {str(e)}", 500
 
 @app.route('/server/<guild_id>')
 @login_required
 def server_dashboard(guild_id):
-    user_id = session.get('user_id')
-    guilds = get_user_guilds(user_id)
-    
-    selected_guild = None
-    for guild in guilds:
-        if guild['id'] == guild_id:
-            selected_guild = guild
-            break
-    
-    if not selected_guild:
-        return "❌ Server not found", 404
-    
-    return render_template('server_dashboard.html',
-        user={'id': user_id, 'username': session.get('username', ''), 'avatar': session.get('avatar', '')},
-        guild=selected_guild,
-        datetime=datetime
-    )
+    try:
+        user_id = session.get('user_id')
+        guilds = get_user_guilds(user_id)
+        
+        selected_guild = None
+        for guild in guilds:
+            if guild['id'] == guild_id:
+                selected_guild = guild
+                break
+        
+        if not selected_guild:
+            return "❌ Server not found", 404
+        
+        return render_template('server_dashboard.html',
+            user={'id': user_id, 'username': session.get('username', ''), 'avatar': session.get('avatar', '')},
+            guild=selected_guild,
+            datetime=datetime
+        )
+    except Exception as e:
+        print(f"❌ Server dashboard error: {e}")
+        return f"❌ Error loading server: {str(e)}", 500
 
 @app.route('/moderation')
 @login_required
 def moderation():
-    return render_template('moderation.html')
+    try:
+        return render_template('moderation.html')
+    except Exception as e:
+        print(f"❌ Moderation error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/automod')
 @login_required
 def automod():
-    return render_template('automod.html')
+    try:
+        return render_template('automod.html')
+    except Exception as e:
+        print(f"❌ Automod error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/autoreply')
 @login_required
 def autoreply():
-    conn = get_db_connection()
-    replies = conn.execute('SELECT * FROM autoreply').fetchall()
-    conn.close()
-    return render_template('autoreply.html', replies=replies)
+    try:
+        conn = get_db_connection()
+        replies = conn.execute('SELECT * FROM autoreply').fetchall()
+        conn.close()
+        return render_template('autoreply.html', replies=replies)
+    except Exception as e:
+        print(f"❌ Autoreply error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/welcome')
 @login_required
 def welcome():
-    return render_template('welcome.html')
+    try:
+        return render_template('welcome.html')
+    except Exception as e:
+        print(f"❌ Welcome error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/leveling')
 @login_required
 def leveling():
-    conn = get_db_connection()
-    top_10 = conn.execute(
-        'SELECT user_id, level, xp FROM levels ORDER BY level DESC, xp DESC LIMIT 10'
-    ).fetchall()
-    conn.close()
-    return render_template('leveling.html', top_10=top_10)
+    try:
+        conn = get_db_connection()
+        top_10 = conn.execute(
+            'SELECT user_id, level, xp FROM levels ORDER BY level DESC, xp DESC LIMIT 10'
+        ).fetchall()
+        conn.close()
+        return render_template('leveling.html', top_10=top_10)
+    except Exception as e:
+        print(f"❌ Leveling error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/logs')
 @login_required
 def logs():
-    return render_template('logs.html')
+    try:
+        return render_template('logs.html')
+    except Exception as e:
+        print(f"❌ Logs error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/tickets')
 @login_required
 def tickets():
-    conn = get_db_connection()
-    open_tickets = conn.execute(
-        'SELECT * FROM tickets WHERE status = "open" ORDER BY created_at DESC'
-    ).fetchall()
-    conn.close()
-    return render_template('tickets.html', open_tickets=open_tickets)
+    try:
+        conn = get_db_connection()
+        open_tickets = conn.execute(
+            'SELECT * FROM tickets WHERE status = "open" ORDER BY created_at DESC'
+        ).fetchall()
+        conn.close()
+        return render_template('tickets.html', open_tickets=open_tickets)
+    except Exception as e:
+        print(f"❌ Tickets error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/settings')
 @login_required
 def settings():
-    conn = get_db_connection()
-    settings = conn.execute('SELECT * FROM settings ORDER BY key').fetchall()
-    conn.close()
-    return render_template('settings.html', settings=settings)
+    try:
+        conn = get_db_connection()
+        settings = conn.execute('SELECT * FROM settings ORDER BY key').fetchall()
+        conn.close()
+        return render_template('settings.html', settings=settings)
+    except Exception as e:
+        print(f"❌ Settings error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/autoroles')
 @login_required
 def autoroles():
-    return render_template('autoroles.html')
+    try:
+        return render_template('autoroles.html')
+    except Exception as e:
+        print(f"❌ Autoroles error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/starboard')
 @login_required
 def starboard():
-    return render_template('starboard.html')
+    try:
+        return render_template('starboard.html')
+    except Exception as e:
+        print(f"❌ Starboard error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/self_roles')
 @login_required
 def self_roles():
-    return render_template('self_roles.html')
+    try:
+        return render_template('self_roles.html')
+    except Exception as e:
+        print(f"❌ Self roles error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/notifications')
 @login_required
 def notifications():
-    return render_template('notifications.html')
+    try:
+        return render_template('notifications.html')
+    except Exception as e:
+        print(f"❌ Notifications error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/temp_channels')
 @login_required
 def temp_channels():
-    return render_template('temp_channels.html')
+    try:
+        return render_template('temp_channels.html')
+    except Exception as e:
+        print(f"❌ Temp channels error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/colors')
 @login_required
 def colors():
-    return render_template('colors.html')
+    try:
+        return render_template('colors.html')
+    except Exception as e:
+        print(f"❌ Colors error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 @app.route('/mod_actions')
 @login_required
 def mod_actions():
-    conn = get_db_connection()
-    actions = conn.execute('SELECT * FROM mod_actions ORDER BY id DESC LIMIT 50').fetchall()
-    conn.close()
-    return render_template('mod_actions.html', mod_actions=actions)
+    try:
+        conn = get_db_connection()
+        actions = conn.execute('SELECT * FROM mod_actions ORDER BY id DESC LIMIT 50').fetchall()
+        conn.close()
+        return render_template('mod_actions.html', mod_actions=actions)
+    except Exception as e:
+        print(f"❌ Mod actions error: {e}")
+        return f"❌ Error: {str(e)}", 500
 
 # ====== APIs ======
 @app.route('/api/guild_roles/<guild_id>')
 @login_required
 def get_guild_roles(guild_id):
-    user_id = session.get('user_id')
-    user = get_user_by_discord_id(user_id)
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    headers = {'Authorization': f'Bearer {user["access_token"]}'}
-    response = requests.get(
-        f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
-        headers=headers
-    )
-    
-    if response.status_code != 200:
+    try:
+        user_id = session.get('user_id')
+        user = get_user_by_discord_id(user_id)
+        
+        if not user:
+            return jsonify([])
+        
+        headers = {'Authorization': f'Bearer {user["access_token"]}'}
+        response = requests.get(
+            f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
+            headers=headers
+        )
+        
+        if response.status_code != 200:
+            return jsonify([])
+        
+        return jsonify(response.json())
+    except Exception as e:
+        print(f"❌ API guild_roles error: {e}")
         return jsonify([])
-    
-    return jsonify(response.json())
 
 @app.route('/api/guild_channels/<guild_id>')
 @login_required
 def get_guild_channels(guild_id):
-    user_id = session.get('user_id')
-    user = get_user_by_discord_id(user_id)
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    headers = {'Authorization': f'Bearer {user["access_token"]}'}
-    response = requests.get(
-        f"{DISCORD_API_BASE}/guilds/{guild_id}/channels",
-        headers=headers
-    )
-    
-    if response.status_code != 200:
+    try:
+        user_id = session.get('user_id')
+        user = get_user_by_discord_id(user_id)
+        
+        if not user:
+            return jsonify([])
+        
+        headers = {'Authorization': f'Bearer {user["access_token"]}'}
+        response = requests.get(
+            f"{DISCORD_API_BASE}/guilds/{guild_id}/channels",
+            headers=headers
+        )
+        
+        if response.status_code != 200:
+            return jsonify([])
+        
+        return jsonify(response.json())
+    except Exception as e:
+        print(f"❌ API guild_channels error: {e}")
         return jsonify([])
-    
-    return jsonify(response.json())
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
