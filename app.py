@@ -280,14 +280,17 @@ def server_dashboard(guild_id):
         if not selected_guild:
             return "❌ Server not found", 404
         
+        # ✅ تأكد من تمرير user بشكل صحيح
         user_data = {
             'id': user_id,
             'username': session.get('username', 'Unknown'),
-            'avatar': session.get('avatar', '')
+            'avatar': session.get('avatar', ''),
+            'xp': 0,
+            'level': 0
         }
         
         return render_template('server_dashboard.html',
-            user=user_data,
+            user=user_data,           # ← هذا هو المطلوب
             guild=selected_guild,
             datetime=datetime
         )
