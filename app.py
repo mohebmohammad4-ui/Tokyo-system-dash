@@ -264,7 +264,7 @@ def dashboard():
         print(f"❌ Dashboard error: {e}")
         return f"❌ Error loading dashboard: {str(e)}", 500
 
-@app.route('/server/<guild_id>')
+@@app.route('/server/<guild_id>')
 @login_required
 def server_dashboard(guild_id):
     try:
@@ -280,8 +280,17 @@ def server_dashboard(guild_id):
         if not selected_guild:
             return "❌ Server not found", 404
         
+        # ✅ تأكد من تمرير user بالشكل الصحيح
+        user_data = {
+            'id': user_id,
+            'username': session.get('username', 'Unknown'),
+            'avatar': session.get('avatar', ''),
+            'xp': 0,
+            'level': 0
+        }
+        
         return render_template('server_dashboard.html',
-            user={'id': user_id, 'username': session.get('username', ''), 'avatar': session.get('avatar', '')},
+            user=user_data,           # ← هذا هو المطلوب
             guild=selected_guild,
             datetime=datetime
         )
