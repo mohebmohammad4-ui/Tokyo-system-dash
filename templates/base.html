@@ -9,17 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="header-stats">
-    <span class="stat-badge">
-        <i class="fas fa-user"></i> {{ user.username }}
-    </span>
-    <span class="stat-badge">
-        <i class="fas fa-star"></i> Level {{ user.level|default(0) }}
-    </span>
-    <span class="stat-badge">
-        <i class="fas fa-coins"></i> {{ user.xp|default(0) }} XP
-    </span>
-</div>
     <div class="dashboard">
         <!-- ====== Sidebar ====== -->
         <aside class="sidebar">
@@ -112,21 +101,23 @@
                 </div>
                 <div class="header-right">
                     <div class="header-stats">
+                        <!-- ✅ استخدام default() عشان ما يظهر خطأ لو ما في user -->
                         <span class="stat-badge">
-                            <i class="fas fa-user"></i> 1,402,698
+                            <i class="fas fa-user"></i> {{ user.username|default('Guest') }}
                         </span>
                         <span class="stat-badge">
-                            <i class="fas fa-star"></i> Level 5
+                            <i class="fas fa-star"></i> Level {{ user.level|default(0) }}
                         </span>
                         <span class="stat-badge">
-                            <i class="fas fa-trophy"></i> Rank 3,788,106
-                        </span>
-                        <span class="stat-badge">
-                            <i class="fas fa-heart"></i> 0
+                            <i class="fas fa-coins"></i> {{ user.xp|default(0) }} XP
                         </span>
                     </div>
                     <div class="user-profile">
-                        <img src="https://cdn.discordapp.com/avatars/.../avatar.png" alt="User">
+                        {% if user.avatar %}
+                        <img src="https://cdn.discordapp.com/avatars/{{ user.id }}/{{ user.avatar }}.png" alt="User">
+                        {% else %}
+                        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="User">
+                        {% endif %}
                     </div>
                 </div>
             </header>
@@ -139,190 +130,5 @@
     </div>
     
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script>
-// ====== TOKYO SYSTEM - Interactive Buttons ======
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // ====== Add Admin Button ======
-    const addAdminBtn = document.querySelector('.btn-primary i.fa-user-plus')?.parentElement;
-    if (addAdminBtn) {
-        addAdminBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const userId = prompt('أدخل ID العضو:');
-            if (userId) {
-                fetch('/api/addadmin', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user_id: userId})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        alert('✅ تم إضافة الأدمن بنجاح!');
-                        location.reload();
-                    } else {
-                        alert('❌ حدث خطأ: ' + data.error);
-                    }
-                });
-            }
-        });
-    }
-
-    // ====== Ban Button ======
-    const banBtn = document.querySelector('.btn-danger i.fa-ban')?.parentElement;
-    if (banBtn) {
-        banBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const userId = prompt('أدخل ID العضو المراد حظره:');
-            const reason = prompt('سبب الحظر:');
-            if (userId) {
-                fetch('/api/ban', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user_id: userId, reason: reason || 'لا يوجد سبب'})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        alert('✅ تم حظر العضو بنجاح!');
-                        location.reload();
-                    } else {
-                        alert('❌ حدث خطأ: ' + data.error);
-                    }
-                });
-            }
-        });
-    }
-
-    // ====== Timeout Button ======
-    const timeoutBtn = document.querySelector('.btn-warning i.fa-clock')?.parentElement;
-    if (timeoutBtn) {
-        timeoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const userId = prompt('أدخل ID العضو:');
-            const minutes = prompt('عدد الدقائق:');
-            const reason = prompt('سبب التايم:');
-            if (userId && minutes) {
-                fetch('/api/timeout', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user_id: userId, minutes: parseInt(minutes), reason: reason || 'لا يوجد سبب'})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        alert('✅ تم تايم العضو بنجاح!');
-                        location.reload();
-                    } else {
-                        alert('❌ حدث خطأ: ' + data.error);
-                    }
-                });
-            }
-        });
-    }
-
-    // ====== Warn Button ======
-    const warnBtn = document.querySelector('.btn-info i.fa-exclamation-triangle')?.parentElement;
-    if (warnBtn) {
-        warnBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const userId = prompt('أدخل ID العضو:');
-            const reason = prompt('سبب التحذير:');
-            if (userId) {
-                fetch('/api/warn', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({user_id: userId, reason: reason || 'لا يوجد سبب'})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        alert('✅ تم تحذير العضو بنجاح!');
-                        location.reload();
-                    } else {
-                        alert('❌ حدث خطأ: ' + data.error);
-                    }
-                });
-            }
-        });
-    }
-
-    // ====== Create Ticket Button ======
-    const ticketBtn = document.querySelector('.btn-success i.fa-ticket')?.parentElement;
-    if (ticketBtn) {
-        ticketBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const reason = prompt('سبب فتح التكت:');
-            if (reason) {
-                fetch('/api/createticket', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({reason: reason})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        alert('✅ تم فتح التكت بنجاح!');
-                        location.reload();
-                    } else {
-                        alert('❌ حدث خطأ: ' + data.error);
-                    }
-                });
-            }
-        });
-    }
-
-    // ====== Toggle Switch Handler ======
-    document.querySelectorAll('.toggle-switch input').forEach(toggle => {
-        toggle.addEventListener('change', function() {
-            const card = this.closest('.command-card');
-            if (card) {
-                const badge = card.querySelector('.badge');
-                if (badge) {
-                    if (this.checked) {
-                        badge.textContent = 'Active';
-                        badge.className = 'badge badge-success';
-                    } else {
-                        badge.textContent = 'Disabled';
-                        badge.className = 'badge badge-warning';
-                    }
-                }
-            }
-        });
-    });
-
-    // ====== Delete Button Handler ======
-    document.querySelectorAll('.btn-danger.btn-sm').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (confirm('هل أنت متأكد من الحذف؟')) {
-                // تنفيذ الحذف
-                this.closest('tr')?.remove();
-            }
-        });
-    });
-
-    // ====== Edit Button Handler ======
-    document.querySelectorAll('.btn-secondary.btn-sm').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            alert('سيتم فتح نافذة التعديل قريباً.');
-        });
-    });
-
-    // ====== Card Click Effect ======
-    document.querySelectorAll('.stat-card, .guild-card').forEach(card => {
-        card.addEventListener('click', function() {
-            this.style.transform = 'scale(0.98)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
-        });
-    });
-
-});
-
-console.log('✅ TOKYO SYSTEM Dashboard loaded successfully!');
-</script>
 </body>
 </html>
