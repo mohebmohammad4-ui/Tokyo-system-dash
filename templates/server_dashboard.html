@@ -16,9 +16,14 @@
 
 <div class="card">
     <div class="card-body">
-        <p>✅ صفحة السيرفر تعمل بنجاح!</p>
-        <p>Guild ID: {{ guild.id }}</p>
-        <p>Guild Name: {{ guild.name }}</p>
+        <h4>📊 معلومات السيرفر</h4>
+        <p><strong>ID:</strong> {{ guild.id }}</p>
+        <p><strong>الاسم:</strong> {{ guild.name }}</p>
+        <p><strong>الأيقونة:</strong> {% if guild.icon %}✅ متوفرة{% else %}❌ غير متوفرة{% endif %}</p>
+        <p><strong>الصلاحيات:</strong> {{ guild.permissions }}</p>
+        <p><strong>المالك:</strong> {% if guild.owner %}✅ نعم{% else %}❌ لا{% endif %}</p>
+        <hr>
+        <p class="text-muted">سيتم إضافة المزيد من الميزات قريباً...</p>
     </div>
 </div>
 {% endblock %}
