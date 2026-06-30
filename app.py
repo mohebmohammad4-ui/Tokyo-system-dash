@@ -56,6 +56,10 @@ def init_db():
             key TEXT PRIMARY KEY,
             value TEXT
         )''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS self_roles (
+            role_id INTEGER PRIMARY KEY,
+            emoji TEXT
+        )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS dashboard_users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             discord_id TEXT UNIQUE,
@@ -280,7 +284,6 @@ def server_dashboard(guild_id):
         if not selected_guild:
             return "❌ Server not found", 404
         
-        # ✅ تأكد من تمرير user بشكل صحيح
         user_data = {
             'id': user_id,
             'username': session.get('username', 'Unknown'),
@@ -290,7 +293,7 @@ def server_dashboard(guild_id):
         }
         
         return render_template('server_dashboard.html',
-            user=user_data,           # ← هذا هو المطلوب
+            user=user_data,
             guild=selected_guild,
             datetime=datetime
         )
@@ -453,6 +456,8 @@ def mod_actions():
         return f"❌ Error: {str(e)}", 500
 
 # ====== APIs ======
+
+# ====== 1. جلب رتب السيرفر ======
 @app.route('/api/guild_roles/<guild_id>')
 @login_required
 def get_guild_roles(guild_id):
@@ -472,11 +477,15 @@ def get_guild_roles(guild_id):
         if response.status_code != 200:
             return jsonify([])
         
-        return jsonify(response.json())
+        roles = response.json()
+        # ترتيب الرتب حسب الأعلى
+        roles.sort(key=lambda r: r.get('position', 0), reverse=True)
+        return jsonify(roles)
     except Exception as e:
         print(f"❌ API guild_roles error: {e}")
         return jsonify([])
 
+# ====== 2. جلب قنوات السيرفر ======
 @app.route('/api/guild_channels/<guild_id>')
 @login_required
 def get_guild_channels(guild_id):
@@ -500,6 +509,196 @@ def get_guild_channels(guild_id):
     except Exception as e:
         print(f"❌ API guild_channels error: {e}")
         return jsonify([])
+
+# ====== 3. جلب إحصائيات السيرفر ======
+@app.route('/api/guild_stats/<guild_id>')
+@login_required
+def get_guild_stats(guild_id):
+    try:
+        conn = get_db_connection()
+        members = conn.execute('SELECT COUNT(*) FROM levels').fetchone()[0] or 0
+        warnings = conn.execute('SELECT COUNT(*) FROM warnings').fetchone()[0] or 0
+        tickets = conn.execute('SELECT COUNT(*) FROM tickets WHERE status = "open"').fetchone()[0] or 0
+        top_level = conn.execute('SELECT MAX(level) FROM levels').fetchone()[0] or 0
+        conn.close()
+        
+        return jsonify({
+            'members': members,
+            'warnings': warnings,
+            'tickets': tickets,
+            'top_level': top_level
+        })
+    except Exception as e:
+        print(f"❌ API guild_stats error: {e}")
+        return jsonify({'members': 0, 'warnings': 0, 'tickets': 0, 'top_level': 0})
+
+# ====== 4. جلب الردود التلقائية ======
+@app.route('/api/get_replies/<guild_id>')
+@login_required
+def get_replies(guild_id):
+    try:
+        conn = get_db_connection()
+        replies = conn.execute('SELECT * FROM autoreply').fetchall()
+        conn.close()
+        return jsonify([{'trigger': r[0], 'response': r[1]} for r in replies])
+    except Exception as e:
+        print(f"❌ API get_replies error: {e}")
+        return jsonify([])
+
+# ====== 5. إضافة رد تلقائي ======
+@app.route('/api/add_reply', methods=['POST'])
+@login_required
+def add_reply():
+    try:
+        data = request.json
+        trigger = data.get('trigger')
+        response = data.get('response')
+        
+        if not trigger or not response:
+            return jsonify({'error': 'بيانات ناقصة'}), 400
+        
+        conn = get_db_connection()
+        conn.execute(
+            "INSERT OR REPLACE INTO autoreply (trigger, response) VALUES (?, ?)",
+            (trigger.lower(), response)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ API add_reply error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ====== 6. حذف رد تلقائي ======
+@app.route('/api/delete_reply', methods=['POST'])
+@login_required
+def delete_reply():
+    try:
+        data = request.json
+        trigger = data.get('trigger')
+        
+        if not trigger:
+            return jsonify({'error': 'بيانات ناقصة'}), 400
+        
+        conn = get_db_connection()
+        conn.execute("DELETE FROM autoreply WHERE trigger = ?", (trigger.lower(),))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ API delete_reply error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ====== 7. جلب الرتب الاختيارية ======
+@app.route('/api/get_self_roles/<guild_id>')
+@login_required
+def get_self_roles(guild_id):
+    try:
+        conn = get_db_connection()
+        self_roles = conn.execute('SELECT role_id FROM self_roles').fetchall()
+        conn.close()
+        
+        # جلب أسماء الرتب من ديسكورد
+        user_id = session.get('user_id')
+        user = get_user_by_discord_id(user_id)
+        roles = []
+        
+        if user:
+            headers = {'Authorization': f'Bearer {user["access_token"]}'}
+            response = requests.get(
+                f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
+                headers=headers
+            )
+            if response.status_code == 200:
+                guild_roles = response.json()
+                role_map = {str(r['id']): r['name'] for r in guild_roles}
+                
+                for sr in self_roles:
+                    role_id = str(sr[0])
+                    roles.append({
+                        'id': role_id,
+                        'name': role_map.get(role_id, f'رتبة {role_id}')
+                    })
+        
+        return jsonify(roles)
+    except Exception as e:
+        print(f"❌ API get_self_roles error: {e}")
+        return jsonify([])
+
+# ====== 8. إضافة رتبة اختيارية ======
+@app.route('/api/add_self_role', methods=['POST'])
+@login_required
+def add_self_role():
+    try:
+        data = request.json
+        role_id = data.get('role_id')
+        
+        if not role_id:
+            return jsonify({'error': 'بيانات ناقصة'}), 400
+        
+        conn = get_db_connection()
+        conn.execute(
+            "INSERT OR REPLACE INTO self_roles (role_id) VALUES (?)",
+            (role_id,)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ API add_self_role error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ====== 9. حذف رتبة اختيارية ======
+@app.route('/api/remove_self_role', methods=['POST'])
+@login_required
+def remove_self_role():
+    try:
+        data = request.json
+        role_id = data.get('role_id')
+        
+        if not role_id:
+            return jsonify({'error': 'بيانات ناقصة'}), 400
+        
+        conn = get_db_connection()
+        conn.execute("DELETE FROM self_roles WHERE role_id = ?", (role_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ API remove_self_role error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ====== 10. حفظ جميع الإعدادات ======
+@app.route('/api/save_all_settings', methods=['POST'])
+@login_required
+def save_all_settings():
+    try:
+        data = request.json
+        guild_id = data.get('guild_id')
+        settings = data.get('settings', {})
+        
+        if not guild_id:
+            return jsonify({'error': 'guild_id مطلوب'}), 400
+        
+        conn = get_db_connection()
+        for key, value in settings.items():
+            if value is not None and value != '':
+                # تحويل القيم إلى نص
+                if isinstance(value, dict):
+                    value = json.dumps(value)
+                else:
+                    value = str(value)
+                
+                conn.execute(
+                    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                    (f"{guild_id}_{key}", value)
+                )
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ API save_all_settings error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
