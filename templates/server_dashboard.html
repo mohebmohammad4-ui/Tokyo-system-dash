@@ -52,18 +52,6 @@
     </div>
 </div>
 
-<!-- ====== الحقول المشتركة (Member + Reason) ====== -->
-<div class="common-fields">
-    <div class="setting-item">
-        <span class="label">👤 Member:</span>
-        <input type="text" class="form-input" id="member-input" placeholder="@user أو ID">
-    </div>
-    <div class="setting-item">
-        <span class="label">📝 Reason:</span>
-        <input type="text" class="form-input" id="reason-input" placeholder="سبب الإجراء...">
-    </div>
-</div>
-
 <!-- ====== الأقسام القابلة للطي ====== -->
 <div class="accordion">
 
@@ -74,29 +62,37 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
-            <div class="setting-buttons">
-                <button class="btn btn-danger btn-sm" onclick="executeCommand('ban')">Ban</button>
-                <button class="btn btn-warning btn-sm" onclick="executeCommand('timeout')">Timeout</button>
-                <button class="btn btn-info btn-sm" onclick="executeCommand('warn')">Warn</button>
-                <button class="btn btn-secondary btn-sm" onclick="executeCommand('kick')">Kick</button>
-                <button class="btn btn-primary btn-sm" onclick="executeCommand('clear')">Clear</button>
-                <button class="btn btn-purple btn-sm" onclick="executeCommand('nickname')">Nickname</button>
-                <button class="btn btn-pink btn-sm" onclick="executeCommand('giverole')">Give Role</button>
-                <button class="btn btn-cyan btn-sm" onclick="executeCommand('lock')">Lock</button>
-                <button class="btn btn-green btn-sm" onclick="executeCommand('unlock')">Unlock</button>
-                <button class="btn btn-orange btn-sm" onclick="executeCommand('unwarn')">Unwarn</button>
-                <button class="btn btn-teal btn-sm" onclick="executeCommand('warnings')">Warnings</button>
-            </div>
-            <div class="setting-item">
-                <span class="label">🛡️ Mod Roles:</span>
-                <div class="custom-select" id="mod-roles-select">
-                    <button class="select-btn" onclick="toggleDropdown('mod-roles-dropdown')">
-                        <span>اختر رتبة...</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="dropdown-content" id="mod-roles-dropdown"></div>
+            <p class="text-muted">إعدادات أوامر الإدارة والصلاحيات</p>
+            
+            <!-- أوامر الإدارة -->
+            <div class="commands-grid">
+                {% for cmd in ['ban', 'timeout', 'warn', 'kick', 'clear', 'nickname', 'giverole', 'unwarn', 'warnings', 'lock', 'unlock'] %}
+                <div class="command-card">
+                    <div class="command-header">
+                        <span class="command-name">/{{ cmd }}</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="command-body">
+                        <div class="setting-item">
+                            <span class="label">الاختصار:</span>
+                            <input type="text" class="form-input" value="{{ cmd[0] }}" placeholder="اختصار">
+                        </div>
+                        <div class="setting-item">
+                            <span class="label">الرتب المسموحة:</span>
+                            <div class="custom-select tokyo-select" id="mod-{{ cmd }}-roles">
+                                <button class="select-btn" onclick="toggleDropdown('mod-{{ cmd }}-dropdown')">
+                                    <span>اختر رتب...</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-content tokyo-dropdown" id="mod-{{ cmd }}-dropdown"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="saveSetting('mod_roles')">حفظ</button>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -108,31 +104,32 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
-            <div class="setting-buttons">
-                <button class="btn btn-success btn-sm" onclick="executeCommand('ticket')">فتح تكت</button>
-                <button class="btn btn-secondary btn-sm" onclick="executeCommand('tickets_list')">إدارة التكتات</button>
-            </div>
-            <div class="setting-item">
-                <span class="label">📁 كاتيجوري التكتات:</span>
-                <div class="custom-select" id="ticket-category-select">
-                    <button class="select-btn" onclick="toggleDropdown('ticket-category-dropdown')">
-                        <span>اختر كاتيجوري...</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="dropdown-content" id="ticket-category-dropdown"></div>
+            <p class="text-muted">إعدادات نظام التكتات والدعم</p>
+            
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <span class="label">📁 كاتيجوري التكتات:</span>
+                    <div class="custom-select tokyo-select">
+                        <button class="select-btn" onclick="toggleDropdown('ticket-cat-dropdown')">
+                            <span>اختر كاتيجوري...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-content tokyo-dropdown" id="ticket-cat-dropdown"></div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="saveSetting('ticket_category')">حفظ</button>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="saveSetting('ticket_category')">حفظ</button>
-            </div>
-            <div class="setting-item">
-                <span class="label">🛡️ رتبة الدعم:</span>
-                <div class="custom-select" id="support-role-select">
-                    <button class="select-btn" onclick="toggleDropdown('support-role-dropdown')">
-                        <span>اختر رتبة...</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="dropdown-content" id="support-role-dropdown"></div>
+                
+                <div class="setting-item">
+                    <span class="label">🛡️ رتبة الدعم:</span>
+                    <div class="custom-select tokyo-select">
+                        <button class="select-btn" onclick="toggleDropdown('support-role-dropdown')">
+                            <span>اختر رتبة...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-content tokyo-dropdown" id="support-role-dropdown"></div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="saveSetting('support_role')">حفظ</button>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="saveSetting('support_role')">حفظ</button>
             </div>
         </div>
     </div>
@@ -144,17 +141,20 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
-            <div class="setting-buttons">
-                <button class="btn btn-primary btn-sm" onclick="executeCommand('addreply')">إضافة رد</button>
-                <button class="btn btn-secondary btn-sm" onclick="executeCommand('replies')">قائمة الردود</button>
+            <p class="text-muted">إدارة الردود التلقائية</p>
+            
+            <div class="setting-item">
+                <span class="label">🔑 الكلمة المفتاحية:</span>
+                <input type="text" class="form-input" id="trigger-input" placeholder="مثال: مرحبا">
             </div>
             <div class="setting-item">
-                <span class="label">🔑 Trigger:</span>
-                <input type="text" class="form-input" id="trigger-input" placeholder="كلمة مفتاحية...">
+                <span class="label">💬 الرد:</span>
+                <input type="text" class="form-input" id="response-input" placeholder="مثال: وعليكم السلام">
             </div>
-            <div class="setting-item">
-                <span class="label">💬 Response:</span>
-                <input type="text" class="form-input" id="response-input" placeholder="الرد...">
+            <button class="btn btn-primary" onclick="addReply()">➕ إضافة رد</button>
+            
+            <div class="replies-list" id="replies-list">
+                <p class="text-muted">لا توجد ردود تلقائية</p>
             </div>
         </div>
     </div>
@@ -166,20 +166,23 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">إعدادات الترحيب والمغادرة</p>
+            
             <div class="setting-item">
                 <span class="label">🎊 قناة الترحيب:</span>
-                <div class="custom-select" id="welcome-channel-select">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('welcome-channel-dropdown')">
                         <span>اختر قناة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="welcome-channel-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="welcome-channel-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('welcome_channel')">حفظ</button>
             </div>
+            
             <div class="setting-item">
                 <span class="label">📝 رسالة الترحيب:</span>
-                <input type="text" class="form-input" id="welcome-message" placeholder="🎌 {member} مرحبًا بك!">
+                <input type="text" class="form-input" id="welcome-message" value="🎌 {member} مرحبًا بك في السيرفر!">
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('welcome_message')">حفظ</button>
             </div>
         </div>
@@ -192,36 +195,40 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">إعدادات نظام المستويات والخبرة</p>
+            
             <div class="setting-item">
                 <span class="label">🏅 رتبة المستوى 5:</span>
-                <div class="custom-select" id="level5-role">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('level5-dropdown')">
                         <span>اختر رتبة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="level5-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="level5-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('level5_role')">حفظ</button>
             </div>
+            
             <div class="setting-item">
                 <span class="label">🏅 رتبة المستوى 10:</span>
-                <div class="custom-select" id="level10-role">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('level10-dropdown')">
                         <span>اختر رتبة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="level10-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="level10-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('level10_role')">حفظ</button>
             </div>
+            
             <div class="setting-item">
                 <span class="label">🏅 رتبة المستوى 15:</span>
-                <div class="custom-select" id="level15-role">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('level15-dropdown')">
                         <span>اختر رتبة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="level15-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="level15-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('level15_role')">حفظ</button>
             </div>
@@ -235,14 +242,16 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">إعدادات قنوات اللوقات</p>
+            
             <div class="setting-item">
                 <span class="label">📋 قناة اللوقات:</span>
-                <div class="custom-select" id="log-channel-select">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('log-channel-dropdown')">
                         <span>اختر قناة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="log-channel-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="log-channel-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('log_channel')">حفظ</button>
             </div>
@@ -256,14 +265,16 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">الرتب التي تعطى تلقائياً</p>
+            
             <div class="setting-item">
                 <span class="label">🎯 رتبة الدخول:</span>
-                <div class="custom-select" id="join-role-select">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('join-role-dropdown')">
                         <span>اختر رتبة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="join-role-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="join-role-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('join_role')">حفظ</button>
             </div>
@@ -277,19 +288,22 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">إعدادات نظام Starboard</p>
+            
             <div class="setting-item">
                 <span class="label">⭐ قناة Starboard:</span>
-                <div class="custom-select" id="starboard-channel-select">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('starboard-channel-dropdown')">
                         <span>اختر قناة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="starboard-channel-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="starboard-channel-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('starboard_channel')">حفظ</button>
             </div>
+            
             <div class="setting-item">
-                <span class="label">🔢 عدد النجوم المطلوب:</span>
+                <span class="label">🔢 عدد النجوم:</span>
                 <input type="number" class="form-input" id="star-threshold" value="3" style="width: 100px;">
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('star_threshold')">حفظ</button>
             </div>
@@ -303,16 +317,22 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">رتب يمكن للأعضاء أخذها بأنفسهم</p>
+            
             <div class="setting-item">
                 <span class="label">➕ إضافة رتبة:</span>
-                <div class="custom-select" id="self-role-select">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('self-role-dropdown')">
                         <span>اختر رتبة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="self-role-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="self-role-dropdown"></div>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="saveSetting('self_role')">إضافة</button>
+                <button class="btn btn-primary btn-sm" onclick="addSelfRole()">إضافة</button>
+            </div>
+            
+            <div class="self-roles-list" id="self-roles-list">
+                <p class="text-muted">لا توجد رتب</p>
             </div>
         </div>
     </div>
@@ -324,14 +344,16 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">إعدادات الرومات الصوتية المؤقتة</p>
+            
             <div class="setting-item">
                 <span class="label">📁 كاتيجوري الرومات المؤقتة:</span>
-                <div class="custom-select" id="temp-category-select">
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('temp-category-dropdown')">
                         <span>اختر كاتيجوري...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="temp-category-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="temp-category-dropdown"></div>
                 </div>
                 <button class="btn btn-primary btn-sm" onclick="saveSetting('temp_category')">حفظ</button>
             </div>
@@ -345,17 +367,23 @@
             <span class="accordion-icon">▶</span>
         </div>
         <div class="accordion-body">
+            <p class="text-muted">تغيير ألوان الرتب</p>
+            
             <div class="setting-item">
-                <span class="label">🎨 تغيير لون الرتبة:</span>
-                <div class="custom-select" id="color-role-select">
+                <span class="label">🎨 الرتبة:</span>
+                <div class="custom-select tokyo-select">
                     <button class="select-btn" onclick="toggleDropdown('color-role-dropdown')">
                         <span>اختر رتبة...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div class="dropdown-content" id="color-role-dropdown"></div>
+                    <div class="dropdown-content tokyo-dropdown" id="color-role-dropdown"></div>
                 </div>
+            </div>
+            
+            <div class="setting-item">
+                <span class="label">🎨 اللون:</span>
                 <input type="color" class="form-color" id="color-picker" value="#00d4ff">
-                <button class="btn btn-primary btn-sm" onclick="saveSetting('role_color')">حفظ</button>
+                <button class="btn btn-primary btn-sm" onclick="saveSetting('role_color')">تغيير</button>
             </div>
         </div>
     </div>
@@ -372,7 +400,6 @@ function toggleAccordion(header) {
     const icon = header.querySelector('.accordion-icon');
     const isOpen = body.style.display === 'block';
     
-    // إغلاق جميع الأقسام المفتوحة
     document.querySelectorAll('.accordion-body').forEach(b => b.style.display = 'none');
     document.querySelectorAll('.accordion-icon').forEach(i => i.textContent = '▶');
     
@@ -387,7 +414,6 @@ function toggleDropdown(id) {
     const dropdown = document.getElementById(id);
     const isOpen = dropdown.style.display === 'block';
     
-    // إغلاق جميع القوائم المنسدلة
     document.querySelectorAll('.dropdown-content').forEach(d => d.style.display = 'none');
     
     if (!isOpen) {
@@ -407,34 +433,29 @@ document.addEventListener('DOMContentLoaded', function() {
     loadRoles();
     loadChannels();
     loadStats();
+    loadReplies();
+    loadSelfRoles();
 });
 
 function loadRoles() {
     fetch(`/api/guild_roles/${guildId}`)
         .then(res => res.json())
         .then(roles => {
-            const dropdowns = [
-                'mod-roles-dropdown', 'support-role-dropdown',
-                'level5-dropdown', 'level10-dropdown', 'level15-dropdown',
-                'join-role-dropdown', 'self-role-dropdown', 'color-role-dropdown'
-            ];
-            dropdowns.forEach(id => {
-                const container = document.getElementById(id);
-                if (container) {
-                    container.innerHTML = '';
-                    const selectBtn = container.closest('.custom-select').querySelector('.select-btn span');
-                    roles.forEach(role => {
-                        const item = document.createElement('div');
-                        item.className = 'dropdown-item';
-                        item.textContent = role.name;
-                        item.dataset.value = role.id;
-                        item.onclick = function() {
-                            selectBtn.textContent = role.name;
-                            container.style.display = 'none';
-                        };
-                        container.appendChild(item);
-                    });
-                }
+            const dropdowns = document.querySelectorAll('.dropdown-content.tokyo-dropdown');
+            dropdowns.forEach(container => {
+                container.innerHTML = '';
+                const selectBtn = container.closest('.custom-select').querySelector('.select-btn span');
+                roles.forEach(role => {
+                    const item = document.createElement('div');
+                    item.className = 'dropdown-item tokyo-item';
+                    item.textContent = role.name;
+                    item.dataset.value = role.id;
+                    item.onclick = function() {
+                        selectBtn.textContent = role.name;
+                        container.style.display = 'none';
+                    };
+                    container.appendChild(item);
+                });
             });
         })
         .catch(() => console.error('Error loading roles'));
@@ -445,28 +466,20 @@ function loadChannels() {
         .then(res => res.json())
         .then(channels => {
             const textChannels = channels.filter(c => c.type === 0);
-            const dropdowns = [
-                'ticket-category-dropdown', 'welcome-channel-dropdown',
-                'log-channel-dropdown', 'starboard-channel-dropdown',
-                'temp-category-dropdown'
-            ];
-            dropdowns.forEach(id => {
-                const container = document.getElementById(id);
-                if (container) {
-                    container.innerHTML = '';
-                    const selectBtn = container.closest('.custom-select').querySelector('.select-btn span');
-                    textChannels.forEach(channel => {
-                        const item = document.createElement('div');
-                        item.className = 'dropdown-item';
-                        item.textContent = `#${channel.name}`;
-                        item.dataset.value = channel.id;
-                        item.onclick = function() {
-                            selectBtn.textContent = `#${channel.name}`;
-                            container.style.display = 'none';
-                        };
-                        container.appendChild(item);
-                    });
-                }
+            const dropdowns = document.querySelectorAll('.dropdown-content.tokyo-dropdown');
+            dropdowns.forEach(container => {
+                const selectBtn = container.closest('.custom-select').querySelector('.select-btn span');
+                textChannels.forEach(channel => {
+                    const item = document.createElement('div');
+                    item.className = 'dropdown-item tokyo-item';
+                    item.textContent = `#${channel.name}`;
+                    item.dataset.value = channel.id;
+                    item.onclick = function() {
+                        selectBtn.textContent = `#${channel.name}`;
+                        container.style.display = 'none';
+                    };
+                    container.appendChild(item);
+                });
             });
         })
         .catch(() => console.error('Error loading channels'));
@@ -484,16 +497,49 @@ function loadStats() {
         .catch(() => console.error('Error loading stats'));
 }
 
+function loadReplies() {
+    fetch(`/api/get_replies/${guildId}`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('replies-list');
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-muted">لا توجد ردود تلقائية</p>';
+                return;
+            }
+            container.innerHTML = data.map(r => 
+                `<div class="reply-item">
+                    <span class="trigger">${r.trigger}</span>
+                    <span class="response">→ ${r.response}</span>
+                    <button class="btn btn-danger btn-sm" onclick="deleteReply('${r.trigger}')">✕</button>
+                </div>`
+            ).join('');
+        });
+}
+
+function loadSelfRoles() {
+    fetch(`/api/get_self_roles/${guildId}`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('self-roles-list');
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-muted">لا توجد رتب</p>';
+                return;
+            }
+            container.innerHTML = data.map(r => 
+                `<div class="reply-item">
+                    <span>${r.name}</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeSelfRole('${r.id}')">✕</button>
+                </div>`
+            ).join('');
+        });
+}
+
 // ====== حفظ الإعدادات ======
 function saveSetting(key) {
-    // البحث عن القيمة المحددة
     let value = '';
-    const input = document.getElementById(key + '-input');
     const selectBtn = document.querySelector(`#${key}-select .select-btn span`);
     
-    if (input) {
-        value = input.value;
-    } else if (selectBtn) {
+    if (selectBtn) {
         value = selectBtn.textContent;
         if (value === 'اختر رتبة...' || value === 'اختر قناة...') {
             return alert('❌ الرجاء اختيار قيمة');
@@ -517,60 +563,93 @@ function saveSetting(key) {
     });
 }
 
-// ====== تنفيذ الأوامر ======
-function executeCommand(command) {
-    const member = document.getElementById('member-input').value;
-    const reason = document.getElementById('reason-input').value;
+// ====== إضافة رد تلقائي ======
+function addReply() {
+    const trigger = document.getElementById('trigger-input').value;
+    const response = document.getElementById('response-input').value;
     
-    if (!member && command !== 'clear' && command !== 'lock' && command !== 'unlock') {
-        return alert('❌ الرجاء إدخال العضو (ID أو منشن)');
+    if (!trigger || !response) {
+        return alert('❌ الرجاء إدخال الكلمة المفتاحية والرد');
     }
     
-    const data = {
-        guild_id: guildId,
-        member: member,
-        reason: reason
-    };
-    
-    // أوامر خاصة
-    if (command === 'clear') {
-        const amount = prompt('عدد الرسائل المراد حذفها:');
-        if (!amount) return;
-        data.amount = parseInt(amount);
-    }
-    
-    if (command === 'timeout') {
-        const minutes = prompt('عدد الدقائق:');
-        if (!minutes) return;
-        data.minutes = parseInt(minutes);
-    }
-    
-    if (command === 'giverole') {
-        const role = prompt('أدخل ID الرتبة:');
-        if (!role) return;
-        data.role = role;
-    }
-    
-    fetch(`/api/command/${command}`, {
+    fetch('/api/add_reply', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
+        body: JSON.stringify({guild_id: guildId, trigger: trigger, response: response})
     })
     .then(res => res.json())
     .then(data => {
         if(data.success) {
-            alert('✅ تم تنفيذ الأمر بنجاح!');
+            alert('✅ تم إضافة الرد بنجاح!');
+            document.getElementById('trigger-input').value = '';
+            document.getElementById('response-input').value = '';
+            loadReplies();
         } else {
             alert('❌ حدث خطأ: ' + (data.error || 'غير معروف'));
         }
     });
 }
 
-// ====== تحديث الإحصائيات كل 30 ثانية ======
+function deleteReply(trigger) {
+    if (!confirm(`حذف الرد "${trigger}"؟`)) return;
+    
+    fetch('/api/delete_reply', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: guildId, trigger: trigger})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            loadReplies();
+        }
+    });
+}
+
+// ====== إضافة رتبة اختيارية ======
+function addSelfRole() {
+    const selectBtn = document.querySelector('#self-role-select .select-btn span');
+    const roleId = selectBtn.dataset.value;
+    const roleName = selectBtn.textContent;
+    
+    if (!roleId || roleName === 'اختر رتبة...') {
+        return alert('❌ الرجاء اختيار رتبة');
+    }
+    
+    fetch('/api/add_self_role', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: guildId, role_id: roleId})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert('✅ تم إضافة الرتبة!');
+            loadSelfRoles();
+        }
+    });
+}
+
+function removeSelfRole(roleId) {
+    if (!confirm('حذف هذه الرتبة؟')) return;
+    
+    fetch('/api/remove_self_role', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({guild_id: guildId, role_id: roleId})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            loadSelfRoles();
+        }
+    });
+}
+
 setInterval(loadStats, 30000);
 </script>
 
-<!-- ====== CSS ====== -->
+<!-- ====== CSS (بثيم TOKYO) ====== -->
 <style>
 /* ====== Server Header ====== */
 .server-header {
@@ -618,21 +697,50 @@ setInterval(loadStats, 30000);
     color: var(--text-secondary);
 }
 
-/* ====== Common Fields ====== */
-.common-fields {
-    display: flex;
-    gap: 20px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+/* ====== Stats Grid ====== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
-.common-fields .setting-item {
-    flex: 1;
-    min-width: 200px;
+.stat-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid var(--border-color);
+}
+
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.neon-blue .stat-icon { background: rgba(0, 212, 255, 0.15); color: var(--neon-blue); }
+.neon-purple .stat-icon { background: rgba(123, 47, 252, 0.15); color: var(--neon-purple); }
+.neon-pink .stat-icon { background: rgba(255, 45, 149, 0.15); color: var(--neon-pink); }
+.neon-cyan .stat-icon { background: rgba(0, 255, 136, 0.15); color: var(--neon-cyan); }
+
+.stat-info h3 {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin: 0;
+}
+
+.stat-number {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
 }
 
 /* ====== Accordion ====== */
@@ -655,9 +763,9 @@ setInterval(loadStats, 30000);
     align-items: center;
     padding: 14px 20px;
     cursor: pointer;
-    transition: background 0.3s ease;
     font-weight: 600;
     font-size: 16px;
+    transition: background 0.3s;
 }
 
 .accordion-header:hover {
@@ -672,7 +780,6 @@ setInterval(loadStats, 30000);
 .accordion-icon {
     font-size: 14px;
     color: var(--text-secondary);
-    transition: transform 0.3s ease;
 }
 
 .accordion-body {
@@ -681,14 +788,14 @@ setInterval(loadStats, 30000);
     border-top: 1px solid var(--border-color);
 }
 
-/* ====== Custom Dropdown (Google-like) ====== */
-.custom-select {
+/* ====== Custom Select (TOKYO Theme) ====== */
+.custom-select.tokyo-select {
     position: relative;
     flex: 1;
     min-width: 160px;
 }
 
-.select-btn {
+.custom-select.tokyo-select .select-btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -701,14 +808,14 @@ setInterval(loadStats, 30000);
     cursor: pointer;
     font-size: 14px;
     font-family: 'Cairo', sans-serif;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.3s;
 }
 
-.select-btn:hover {
+.custom-select.tokyo-select .select-btn:hover {
     border-color: var(--neon-blue);
 }
 
-.dropdown-content {
+.dropdown-content.tokyo-dropdown {
     display: none;
     position: absolute;
     top: 100%;
@@ -724,14 +831,15 @@ setInterval(loadStats, 30000);
     box-shadow: 0 8px 30px rgba(0,0,0,0.4);
 }
 
-.dropdown-content .dropdown-item {
+.dropdown-item.tokyo-item {
     padding: 8px 14px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s;
     font-size: 14px;
+    color: var(--text-primary);
 }
 
-.dropdown-content .dropdown-item:hover {
+.dropdown-item.tokyo-item:hover {
     background: rgba(0, 212, 255, 0.1);
 }
 
@@ -745,7 +853,7 @@ setInterval(loadStats, 30000);
 }
 
 .setting-item .label {
-    min-width: 100px;
+    min-width: 120px;
     color: var(--text-secondary);
     font-size: 13px;
 }
@@ -776,36 +884,189 @@ setInterval(loadStats, 30000);
     cursor: pointer;
 }
 
-/* ====== Buttons ====== */
-.setting-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
+/* ====== Commands Grid ====== */
+.commands-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
 }
 
+.command-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+
+.command-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.command-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--neon-blue);
+}
+
+.command-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.command-body .setting-item {
+    padding: 4px 0;
+}
+
+.command-body .setting-item .label {
+    min-width: 80px;
+    font-size: 12px;
+}
+
+/* ====== Toggle Switch ====== */
+.toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    display: inline-block;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #2a3a4a;
+    border-radius: 22px;
+    transition: 0.3s;
+}
+
+.toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--neon-blue);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(18px);
+}
+
+/* ====== Buttons ====== */
 .btn-sm {
     padding: 4px 14px;
     font-size: 13px;
 }
 
-.btn-purple { background: #7b2ffc; color: #fff; }
-.btn-pink { background: #ff2d95; color: #fff; }
-.btn-cyan { background: #00d4ff; color: #000; }
-.btn-green { background: #00ff88; color: #000; }
-.btn-orange { background: #ff8800; color: #fff; }
-.btn-teal { background: #00bcd4; color: #fff; }
+.btn-primary {
+    background: var(--neon-blue);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Cairo', sans-serif;
+}
 
-.btn-purple:hover, .btn-pink:hover, .btn-cyan:hover,
-.btn-green:hover, .btn-orange:hover, .btn-teal:hover {
+.btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+}
+
+.btn-primary.btn-sm {
+    padding: 4px 14px;
+    font-size: 13px;
+}
+
+.btn-danger {
+    background: var(--neon-red);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 4px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255, 45, 85, 0.3);
+}
+
+.btn-secondary {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    border: none;
+    border-radius: 8px;
+    padding: 4px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #2a3a4a;
+    color: #fff;
+}
+
+/* ====== Reply Items ====== */
+.reply-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    margin-top: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.reply-item .trigger {
+    font-weight: 600;
+    color: var(--neon-blue);
+}
+
+.reply-item .response {
+    color: var(--text-secondary);
+}
+
+/* ====== Text Muted ====== */
+.text-muted {
+    color: var(--text-secondary);
+    font-size: 14px;
 }
 
 /* ====== Responsive ====== */
 @media (max-width: 768px) {
-    .common-fields {
-        flex-direction: column;
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .commands-grid {
+        grid-template-columns: 1fr;
     }
     .setting-item {
         flex-direction: column;
@@ -814,7 +1075,7 @@ setInterval(loadStats, 30000);
     .setting-item .label {
         min-width: auto;
     }
-    .custom-select {
+    .custom-select.tokyo-select {
         min-width: 100%;
     }
     .server-header {
@@ -825,9 +1086,6 @@ setInterval(loadStats, 30000);
     .server-info {
         justify-content: center;
         flex-wrap: wrap;
-    }
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
     }
 }
 </style>
