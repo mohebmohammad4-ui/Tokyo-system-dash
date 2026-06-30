@@ -451,13 +451,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function loadRoles() {
     fetch(`/api/guild_roles/${guildId}`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error('Network response was not ok');
+            return res.json();
+        })
         .then(roles => {
+            console.log('✅ Roles loaded:', roles.length);
             const dropdowns = document.querySelectorAll('.dropdown-content.tokyo-dropdown');
             dropdowns.forEach(container => {
                 container.innerHTML = '';
                 const selectBtn = container.closest('.custom-select').querySelector('.select-btn span');
-                // إضافة خيار "الكل" (All)
+                
                 const allItem = document.createElement('div');
                 allItem.className = 'dropdown-item tokyo-item';
                 allItem.textContent = 'الكل';
@@ -481,13 +485,20 @@ function loadRoles() {
                 });
             });
         })
-        .catch(() => showToast('خطأ في تحميل الرتب', 'error'));
+        .catch(err => {
+            console.error('❌ Error loading roles:', err);
+            showToast('❌ خطأ في تحميل الرتب', 'error');
+        });
 }
 
 function loadChannels() {
     fetch(`/api/guild_channels/${guildId}`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error('Network response was not ok');
+            return res.json();
+        })
         .then(channels => {
+            console.log('✅ Channels loaded:', channels.length);
             const textChannels = channels.filter(c => c.type === 0);
             const dropdowns = [
                 'ticket-cat-dropdown', 'welcome-channel-dropdown',
@@ -513,7 +524,10 @@ function loadChannels() {
                 }
             });
         })
-        .catch(() => showToast('خطأ في تحميل القنوات', 'error'));
+        .catch(err => {
+            console.error('❌ Error loading channels:', err);
+            showToast('❌ خطأ في تحميل القنوات', 'error');
+        });
 }
 
 function loadStats() {
@@ -525,7 +539,7 @@ function loadStats() {
             document.getElementById('ticket-count').textContent = data.tickets || 0;
             document.getElementById('top-level').textContent = data.top_level || 0;
         })
-        .catch(() => console.error('Error loading stats'));
+        .catch(err => console.error('❌ Error loading stats:', err));
 }
 
 function loadReplies() {
@@ -545,7 +559,10 @@ function loadReplies() {
                 </div>`
             ).join('');
         })
-        .catch(() => showToast('خطأ في تحميل الردود', 'error'));
+        .catch(err => {
+            console.error('❌ Error loading replies:', err);
+            showToast('❌ خطأ في تحميل الردود', 'error');
+        });
 }
 
 function loadSelfRoles() {
@@ -564,7 +581,10 @@ function loadSelfRoles() {
                 </div>`
             ).join('');
         })
-        .catch(() => showToast('خطأ في تحميل الرتب', 'error'));
+        .catch(err => {
+            console.error('❌ Error loading self roles:', err);
+            showToast('❌ خطأ في تحميل الرتب', 'error');
+        });
 }
 
 // ====== إضافة رد تلقائي ======
@@ -592,6 +612,10 @@ function addReply() {
         } else {
             showToast('❌ حدث خطأ: ' + (data.error || 'غير معروف'), 'error');
         }
+    })
+    .catch(err => {
+        console.error('❌ Error adding reply:', err);
+        showToast('❌ خطأ في الاتصال', 'error');
     });
 }
 
@@ -607,6 +631,10 @@ function deleteReply(trigger) {
             showToast('✅ تم حذف الرد', 'success');
             loadReplies();
         }
+    })
+    .catch(err => {
+        console.error('❌ Error deleting reply:', err);
+        showToast('❌ خطأ في حذف الرد', 'error');
     });
 }
 
@@ -632,6 +660,10 @@ function addSelfRole() {
             showToast('✅ تم إضافة الرتبة!', 'success');
             loadSelfRoles();
         }
+    })
+    .catch(err => {
+        console.error('❌ Error adding self role:', err);
+        showToast('❌ خطأ في إضافة الرتبة', 'error');
     });
 }
 
@@ -647,6 +679,10 @@ function removeSelfRole(roleId) {
             showToast('✅ تم حذف الرتبة', 'success');
             loadSelfRoles();
         }
+    })
+    .catch(err => {
+        console.error('❌ Error removing self role:', err);
+        showToast('❌ خطأ في حذف الرتبة', 'error');
     });
 }
 
@@ -654,7 +690,6 @@ function removeSelfRole(roleId) {
 function saveAllSettings() {
     const settings = {};
     
-    // 1. جمع إعدادات الأوامر
     document.querySelectorAll('.command-card').forEach(card => {
         const cmd = card.dataset.command;
         const enabled = card.querySelector('.cmd-toggle').checked;
@@ -669,49 +704,40 @@ function saveAllSettings() {
         };
     });
     
-    // 2. جمع إعدادات التكتات
     const ticketCat = document.querySelector('#ticket-category-select .select-btn span');
     const supportRole = document.querySelector('#support-role-select .select-btn span');
     settings['ticket_category'] = ticketCat ? ticketCat.textContent : '';
     settings['support_role'] = supportRole ? supportRole.textContent : '';
     
-    // 3. جمع إعدادات الترحيب
     const welcomeChannel = document.querySelector('#welcome-channel-select .select-btn span');
     const welcomeMsg = document.getElementById('welcome-message').value;
     settings['welcome_channel'] = welcomeChannel ? welcomeChannel.textContent : '';
     settings['welcome_message'] = welcomeMsg;
     
-    // 4. جمع إعدادات المستويات
     ['level5', 'level10', 'level15'].forEach(lv => {
         const btn = document.querySelector(`#${lv}-select .select-btn span`);
         settings[lv] = btn ? btn.textContent : '';
     });
     
-    // 5. جمع إعدادات اللوقات
     const logChannel = document.querySelector('#log-channel-select .select-btn span');
     settings['log_channel'] = logChannel ? logChannel.textContent : '';
     
-    // 6. جمع إعدادات الرتب التلقائية
     const joinRole = document.querySelector('#join-role-select .select-btn span');
     settings['join_role'] = joinRole ? joinRole.textContent : '';
     
-    // 7. جمع إعدادات Starboard
     const starChannel = document.querySelector('#starboard-channel-select .select-btn span');
     const starThreshold = document.getElementById('star-threshold').value;
     settings['starboard_channel'] = starChannel ? starChannel.textContent : '';
     settings['star_threshold'] = starThreshold;
     
-    // 8. جمع إعدادات الرومات المؤقتة
     const tempCat = document.querySelector('#temp-category-select .select-btn span');
     settings['temp_category'] = tempCat ? tempCat.textContent : '';
     
-    // 9. جمع إعدادات الألوان
     const colorRole = document.querySelector('#color-role-select .select-btn span');
     const color = document.getElementById('color-picker').value;
     settings['color_role'] = colorRole ? colorRole.textContent : '';
     settings['color'] = color;
     
-    // إرسال جميع الإعدادات
     fetch('/api/save_all_settings', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -728,7 +754,10 @@ function saveAllSettings() {
             showToast('❌ حدث خطأ: ' + (data.error || 'غير معروف'), 'error');
         }
     })
-    .catch(() => showToast('❌ خطأ في الاتصال', 'error'));
+    .catch(err => {
+        console.error('❌ Error saving settings:', err);
+        showToast('❌ خطأ في الاتصال', 'error');
+    });
 }
 
 setInterval(loadStats, 30000);
