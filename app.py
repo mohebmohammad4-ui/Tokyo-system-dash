@@ -126,6 +126,42 @@ def get_user_guilds(discord_id):
         print(f"❌ get_user_guilds error: {e}")
         return []
 
+# ====== تحديث التوكن ======
+def refresh_discord_token(user):
+    try:
+        data = {
+            'client_id': DISCORD_CLIENT_ID,
+            'client_secret': DISCORD_CLIENT_SECRET,
+            'grant_type': 'refresh_token',
+            'refresh_token': user['refresh_token']
+        }
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        response = requests.post(f"{DISCORD_API_BASE}/oauth2/token", data=data, headers=headers)
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            new_access_token = token_data.get('access_token')
+            new_refresh_token = token_data.get('refresh_token')
+            expires_in = token_data.get('expires_in', 604800)
+            expires_at = int(datetime.now().timestamp()) + expires_in
+            
+            conn = get_db_connection()
+            conn.execute(
+                "UPDATE dashboard_users SET access_token = ?, refresh_token = ?, token_expires = ? WHERE discord_id = ?",
+                (new_access_token, new_refresh_token, expires_at, user['discord_id'])
+            )
+            conn.commit()
+            conn.close()
+            return new_access_token
+    except Exception as e:
+        print(f"❌ Refresh token error: {e}")
+    return None
+
+def get_valid_access_token(user):
+    if int(user['token_expires']) < int(datetime.now().timestamp()):
+        return refresh_discord_token(user)
+    return user['access_token']
+
 # ====== التحقق من تسجيل الدخول ======
 def login_required(f):
     @wraps(f)
@@ -468,7 +504,11 @@ def get_guild_roles(guild_id):
         if not user:
             return jsonify([])
         
-        headers = {'Authorization': f'Bearer {user["access_token"]}'}
+        access_token = get_valid_access_token(user)
+        if not access_token:
+            return jsonify([])
+        
+        headers = {'Authorization': f'Bearer {access_token}'}
         response = requests.get(
             f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
             headers=headers
@@ -478,7 +518,6 @@ def get_guild_roles(guild_id):
             return jsonify([])
         
         roles = response.json()
-        # ترتيب الرتب حسب الأعلى
         roles.sort(key=lambda r: r.get('position', 0), reverse=True)
         return jsonify(roles)
     except Exception as e:
@@ -496,7 +535,11 @@ def get_guild_channels(guild_id):
         if not user:
             return jsonify([])
         
-        headers = {'Authorization': f'Bearer {user["access_token"]}'}
+        access_token = get_valid_access_token(user)
+        if not access_token:
+            return jsonify([])
+        
+        headers = {'Authorization': f'Bearer {access_token}'}
         response = requests.get(
             f"{DISCORD_API_BASE}/guilds/{guild_id}/channels",
             headers=headers
@@ -598,27 +641,28 @@ def get_self_roles(guild_id):
         self_roles = conn.execute('SELECT role_id FROM self_roles').fetchall()
         conn.close()
         
-        # جلب أسماء الرتب من ديسكورد
         user_id = session.get('user_id')
         user = get_user_by_discord_id(user_id)
         roles = []
         
         if user:
-            headers = {'Authorization': f'Bearer {user["access_token"]}'}
-            response = requests.get(
-                f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
-                headers=headers
-            )
-            if response.status_code == 200:
-                guild_roles = response.json()
-                role_map = {str(r['id']): r['name'] for r in guild_roles}
-                
-                for sr in self_roles:
-                    role_id = str(sr[0])
-                    roles.append({
-                        'id': role_id,
-                        'name': role_map.get(role_id, f'رتبة {role_id}')
-                    })
+            access_token = get_valid_access_token(user)
+            if access_token:
+                headers = {'Authorization': f'Bearer {access_token}'}
+                response = requests.get(
+                    f"{DISCORD_API_BASE}/guilds/{guild_id}/roles",
+                    headers=headers
+                )
+                if response.status_code == 200:
+                    guild_roles = response.json()
+                    role_map = {str(r['id']): r['name'] for r in guild_roles}
+                    
+                    for sr in self_roles:
+                        role_id = str(sr[0])
+                        roles.append({
+                            'id': role_id,
+                            'name': role_map.get(role_id, f'رتبة {role_id}')
+                        })
         
         return jsonify(roles)
     except Exception as e:
@@ -683,7 +727,6 @@ def save_all_settings():
         conn = get_db_connection()
         for key, value in settings.items():
             if value is not None and value != '':
-                # تحويل القيم إلى نص
                 if isinstance(value, dict):
                     value = json.dumps(value)
                 else:
